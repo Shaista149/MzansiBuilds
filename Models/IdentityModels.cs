@@ -24,10 +24,44 @@ namespace MzansiBuilds.Models
             : base("DefaultConnection", throwIfV1Schema: false)
         {
         }
+        public DbSet<Developer> Developers { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<Milestone> Milestones { get; set; }
+        public DbSet<CollaborationRequest> CollaborationRequests { get; set; }
+        public DbSet<Celebration> Celebrations { get; set; }
 
         public static ApplicationDbContext Create()
         {
             return new ApplicationDbContext();
+        }
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Project>()
+                .HasRequired(p => p.Developer)
+                .WithMany(d => d.Projects)
+                .HasForeignKey(p => p.DeveloperId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<Comment>()
+                .HasRequired(c => c.Developer)
+                .WithMany(d => d.Comments)
+                .HasForeignKey(c => c.DeveloperId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<CollaborationRequest>()
+                .HasRequired(cr => cr.Requester)
+                .WithMany(d => d.SentRequests)
+                .HasForeignKey(cr => cr.RequesterId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<Celebration>()
+                .HasRequired(c => c.Developer)
+                .WithMany(d => d.Celebrations)
+                .HasForeignKey(c => c.DeveloperId)
+                .WillCascadeOnDelete(false);
         }
     }
 }
