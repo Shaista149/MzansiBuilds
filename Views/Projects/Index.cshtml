@@ -1,0 +1,52 @@
+﻿@model IEnumerable<MzansiBuilds.Models.Project>
+@using Microsoft.AspNet.Identity
+
+@{
+    ViewBag.Title = "Live Feed";
+}
+
+<h2>Live Feed</h2>
+<p>See what developers are building across the community</p>
+
+@if (Request.IsAuthenticated)
+{
+    <p>@Html.ActionLink("+ Share Your Project", "Create", new { }, new { @class = "btn btn-primary" })</p>
+}
+
+@foreach (var project in Model)
+{
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">@project.Title</h3>
+        </div>
+        <div class="panel-body">
+            <p>@project.Description</p>
+            <p>
+                <strong>Stage:</strong> @project.Stage &nbsp;|&nbsp;
+                <strong>By:</strong> @project.Developer.Username &nbsp;|&nbsp;
+                <strong>Posted:</strong> @project.CreatedAt.ToString("dd MMM yyyy")
+            </p>
+            @if (!string.IsNullOrEmpty(project.SupportNeeded))
+            {
+                <p><strong>Support Needed:</strong> @project.SupportNeeded</p>
+            }
+            <p>
+                @Html.ActionLink("View Details", "Details", new { id = project.ProjectId }, new { @class = "btn btn-default btn-sm" })
+
+                @if (Request.IsAuthenticated)
+                {
+                    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+                    if (project.Developer.UserId == userId)
+                    {
+                        @Html.ActionLink("Edit", "Edit", new { id = project.ProjectId }, new { @class = "btn btn-warning btn-sm" })
+                    }
+                }
+            </p>
+        </div>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <p>No projects yet — be the first to share one!</p>
+}

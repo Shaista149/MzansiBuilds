@@ -1,0 +1,92 @@
+﻿@model MzansiBuilds.Models.Project
+@using Microsoft.AspNet.Identity
+
+@{
+    ViewBag.Title = Model.Title;
+}
+
+<h2>@Model.Title</h2>
+<p class="text-muted">
+    Shared by <strong>@Model.Developer.Username</strong> on @Model.CreatedAt.ToString("dd MMM yyyy")
+</p>
+
+<hr />
+
+<h4>About this project</h4>
+<p>@Model.Description</p>
+
+<p><strong>Stage:</strong> @Model.Stage</p>
+
+@if (!string.IsNullOrEmpty(Model.SupportNeeded))
+{
+    <p><strong>Support Needed:</strong> @Model.SupportNeeded</p>
+}
+
+<p>
+    <strong>Status:</strong>
+    @if (Model.IsComplete)
+    {
+        <span class="label label-success">Completed</span>
+    }
+    else
+    {
+        <span class="label label-info">In Progress</span>
+    }
+</p>
+
+<hr />
+
+<h4>Milestones</h4>
+@if (Model.Milestones != null && Model.Milestones.Any())
+{
+    foreach (var milestone in Model.Milestones.OrderByDescending(m => m.AchievedAt))
+    {
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <p>@milestone.Description</p>
+                <small class="text-muted">@milestone.AchievedAt.ToString("dd MMM yyyy")</small>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <p class="text-muted">No milestones logged yet.</p>
+}
+
+<hr />
+
+<h4>Comments</h4>
+@if (Model.Comments != null && Model.Comments.Any())
+{
+    foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedAt))
+    {
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <p>@comment.Content</p>
+                <small class="text-muted">
+                    <strong>@comment.Developer.Username</strong> — @comment.CreatedAt.ToString("dd MMM yyyy")
+                </small>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <p class="text-muted">No comments yet — be the first!</p>
+}
+
+<hr />
+
+<p>
+    @Html.ActionLink("Back to Feed", "Index", null, new { @class = "btn btn-default" })
+
+    @if (Request.IsAuthenticated)
+    {
+        var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+        if (Model.Developer.UserId == userId)
+        {
+            @Html.ActionLink("Edit Project", "Edit", new { id = Model.ProjectId }, new { @class = "btn btn-warning" })
+        }
+    }
+</p>

@@ -17,6 +17,7 @@ namespace MzansiBuilds.Controllers
     {
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
+        private ApplicationDbContext db = new ApplicationDbContext();
 
         public AccountController()
         {
@@ -155,6 +156,18 @@ namespace MzansiBuilds.Controllers
                 var result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
+                    // Automatically create a linked Developer profile for the new user
+                    var developer = new Developer
+                    {
+                        UserId = user.Id,
+                        Username = model.Email, // we'll let them update this later
+                        Email = model.Email,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    db.Developers.Add(developer);
+                    await db.SaveChangesAsync();
+
                     await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
                     
                     // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771

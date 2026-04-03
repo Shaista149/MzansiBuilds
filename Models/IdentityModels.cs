@@ -9,6 +9,8 @@ namespace MzansiBuilds.Models
     // You can add profile data for the user by adding more properties to your ApplicationUser class, please visit https://go.microsoft.com/fwlink/?LinkID=317594 to learn more.
     public class ApplicationUser : IdentityUser
     {
+        // Links Identity account to Developer profile
+        public virtual Developer Developer { get; set; }
         public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<ApplicationUser> manager)
         {
             // Note the authenticationType must match the one defined in CookieAuthenticationOptions.AuthenticationType
@@ -62,6 +64,6 @@ namespace MzansiBuilds.Models
                 .WithMany(d => d.Celebrations)
                 .HasForeignKey(c => c.DeveloperId)
                 .WillCascadeOnDelete(false);
-        }
+            }
     }
 }

@@ -17,10 +17,8 @@ namespace MzansiBuilds.Models
 
         // Links the Developer profile to the ASP.NET Identity user (login system)
         // One Identity user = one Developer profile
-        public string UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual ApplicationUser User { get; set; }
+        public string UserId { get; set; }
 
         [Required]
         [StringLength(50)]
