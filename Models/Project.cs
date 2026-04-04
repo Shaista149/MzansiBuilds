@@ -38,7 +38,6 @@ namespace MzansiBuilds.Models
         // Navigation properties : "a project belongs to one developer"
         [ForeignKey("DeveloperId")]
         public virtual Developer Developer { get; set; }
-        public virtual Celebration Celebration { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
         public virtual ICollection<Milestone> Milestones { get; set; }
         public virtual ICollection<CollaborationRequest> CollaborationRequests { get; set; }

@@ -54,6 +54,25 @@ else
     <p class="text-muted">No milestones logged yet.</p>
 }
 
+@* Milestone form - only show to project owner *@
+@if (Request.IsAuthenticated)
+{
+    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+    if (Model.Developer.UserId == userId)
+    {
+        <h5>Log a Milestone</h5>
+        using (Html.BeginForm("Create", "Milestones", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="projectId" value="@Model.ProjectId" />
+            <div class="form-group">
+                <textarea name="description" class="form-control" rows="2" placeholder="What did you achieve?"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm">Log Milestone</button>
+        }
+    }
+}
+
 <hr />
 
 <h4>Comments</h4>
@@ -65,7 +84,7 @@ else
             <div class="panel-body">
                 <p>@comment.Content</p>
                 <small class="text-muted">
-                    <strong>@comment.Developer.Username</strong> — @comment.CreatedAt.ToString("dd MMM yyyy")
+                    <strong>@comment.Developer.Username</strong> - @comment.CreatedAt.ToString("dd MMM yyyy")
                 </small>
             </div>
         </div>
@@ -73,14 +92,110 @@ else
 }
 else
 {
-    <p class="text-muted">No comments yet — be the first!</p>
+    <p class="text-muted">No comments yet - be the first!</p>
+}
+
+@* Comment form - any logged in user can comment *@
+@if (Request.IsAuthenticated)
+{
+    <h5>Leave a Comment</h5>
+    using (Html.BeginForm("Create", "Comments", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="projectId" value="@Model.ProjectId" />
+        <div class="form-group">
+            <textarea name="content" class="form-control" rows="3" placeholder="Write a comment..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+    }
+}
+else
+{
+    <p class="text-muted"><a href="/Account/Login">Log in</a> to leave a comment.</p>
 }
 
 <hr />
 
-<p>
-    @Html.ActionLink("Back to Feed", "Index", null, new { @class = "btn btn-default" })
+@* Collaboration request form - only show to users who don't own the project *@
+@if (Request.IsAuthenticated)
+{
+    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+    if (Model.Developer.UserId != userId)
+    {
+        var existingRequest = Model.CollaborationRequests != null
+            ? Model.CollaborationRequests.FirstOrDefault(r => r.Requester.UserId == userId)
+            : null;
 
+        if (existingRequest == null)
+        {
+            <h5>Interested in collaborating?</h5>
+            using (Html.BeginForm("Create", "CollaborationRequests", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                <div class="form-group">
+                    <textarea name="message" class="form-control" rows="2"
+                              placeholder="Tell the developer why you'd like to collaborate..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success btn-sm">Send Collaboration Request</button>
+            }
+        }
+        else
+        {
+            <p class="text-muted">
+                You already sent a collaboration request -
+                status: <strong>@existingRequest.Status</strong>
+            </p>
+        }
+    }
+}
+
+@* Collaboration requests panel - only show to project owner *@
+@if (Request.IsAuthenticated)
+{
+    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+    if (Model.Developer.UserId == userId && Model.CollaborationRequests != null && Model.CollaborationRequests.Any())
+    {
+        <hr />
+        <h4>Collaboration Requests</h4>
+        foreach (var req in Model.CollaborationRequests.OrderByDescending(r => r.CreatedAt))
+        {
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <p><strong>@req.Requester.Username</strong> wants to collaborate</p>
+                    @if (!string.IsNullOrEmpty(req.Message))
+                    {
+                        <p>@req.Message</p>
+                    }
+                    <p><span class="label label-default">@req.Status</span></p>
+                    @if (req.Status == "Pending")
+                    {
+                        using (Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.RequestId" />
+                            <input type="hidden" name="status" value="Accepted" />
+                            <button type="submit" class="btn btn-success btn-xs">Accept</button>
+                        }
+                        using (Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.RequestId" />
+                            <input type="hidden" name="status" value="Declined" />
+                            <button type="submit" class="btn btn-danger btn-xs">Decline</button>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+}
+
+<hr />
+
+@* Action buttons *@
+<div>
+    @Html.ActionLink("Back to Feed", "Index", null, new { @class = "btn btn-default" })
     @if (Request.IsAuthenticated)
     {
         var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
@@ -89,4 +204,4 @@ else
             @Html.ActionLink("Edit Project", "Edit", new { id = Model.ProjectId }, new { @class = "btn btn-warning" })
         }
     }
-</p>
+</div>

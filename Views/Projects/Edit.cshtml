@@ -51,16 +51,6 @@
         </div>
 
         <div class="form-group">
-            <label class="control-label col-md-2">Mark as Complete</label>
-            <div class="col-md-10 checkbox">
-                <label>
-                    @Html.CheckBoxFor(model => model.IsComplete)
-                    This project is complete
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
                 <input type="submit" value="Save Changes" class="btn btn-primary" />
                 @Html.ActionLink("Cancel", "Details", new { id = Model.ProjectId }, new { @class = "btn btn-default" })

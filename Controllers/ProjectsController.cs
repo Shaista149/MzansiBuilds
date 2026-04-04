@@ -41,6 +41,7 @@ namespace MzansiBuilds.Controllers
                 .Include(p => p.Developer)
                 .Include(p => p.Comments.Select(c => c.Developer))
                 .Include(p => p.Milestones)
+                .Include(p => p.CollaborationRequests.Select(r => r.Requester))
                 .FirstOrDefault(p => p.ProjectId == id);
 
             if (project == null)
@@ -70,10 +71,23 @@ namespace MzansiBuilds.Controllers
                     return new HttpStatusCodeResult(HttpStatusCode.Unauthorized);
 
                 project.DeveloperId = developer.DeveloperId;
-                project.IsComplete = false;
+                project.IsComplete = (project.Stage == "Completed");
 
                 db.Projects.Add(project);
                 db.SaveChanges();
+
+                // If project added is completed add it to Celebration Wall
+                if (project.IsComplete)
+                {
+                    var celebration = new Celebration
+                    {
+                        ProjectId = project.ProjectId,
+                        DeveloperId = developer.DeveloperId,
+                        CelebratedAt = DateTime.Now
+                    };
+                    db.Celebrations.Add(celebration);
+                    db.SaveChanges();
+                }
 
                 return RedirectToAction("Index");
             }
@@ -86,7 +100,7 @@ namespace MzansiBuilds.Controllers
         public ActionResult Edit(int? id)
         {
             if (id == null)
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return RedirectToAction("Index");
 
             var project = db.Projects.Find(id);
 
@@ -107,7 +121,7 @@ namespace MzansiBuilds.Controllers
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "ProjectId,Title,Description,Stage,SupportNeeded,IsComplete")] Project project)
+        public ActionResult Edit([Bind(Include = "ProjectId,Title,Description,Stage,SupportNeeded")] Project project)
         {
             if (ModelState.IsValid)
             {
@@ -116,9 +130,27 @@ namespace MzansiBuilds.Controllers
                     return new HttpStatusCodeResult(HttpStatusCode.Unauthorized);
 
                 project.DeveloperId = developer.DeveloperId;
+                project.IsComplete = (project.Stage == "Completed");
                 db.Entry(project).State = EntityState.Modified;
                 db.SaveChanges();
 
+                if (project.IsComplete)
+                {
+                    var existingCelebration = db.Celebrations
+                        .FirstOrDefault(c => c.ProjectId == project.ProjectId);
+
+                    if (existingCelebration == null)
+                    {
+                        var celebration = new Celebration
+                        {
+                            ProjectId = project.ProjectId,
+                            DeveloperId = developer.DeveloperId,
+                            CelebratedAt = DateTime.Now
+                        };
+                        db.Celebrations.Add(celebration);
+                        db.SaveChanges();
+                    }
+                }
                 return RedirectToAction("Index");
             }
 
@@ -147,7 +179,31 @@ namespace MzansiBuilds.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            var project = db.Projects.Find(id);
+            var project = db.Projects
+                .Include(p => p.Comments)
+                .Include(p => p.Milestones)
+                .Include(p => p.CollaborationRequests)
+                .FirstOrDefault(p => p.ProjectId == id);
+
+            if (project == null)
+                return HttpNotFound();
+
+            var developer = GetCurrentDeveloper();
+            if (developer == null)
+                return new HttpStatusCodeResult(HttpStatusCode.Unauthorized);
+
+            if (project.DeveloperId != developer.DeveloperId)
+                return new HttpStatusCodeResult(HttpStatusCode.Forbidden);
+
+            // Remove all related records first to avoid foreign key errors
+            var celebrations = db.Celebrations
+                .Where(c => c.ProjectId == id).ToList();
+
+            db.Comments.RemoveRange(project.Comments);
+            db.Milestones.RemoveRange(project.Milestones);
+            db.CollaborationRequests.RemoveRange(project.CollaborationRequests);
+            db.Celebrations.RemoveRange(celebrations);
+
             db.Projects.Remove(project);
             db.SaveChanges();
 

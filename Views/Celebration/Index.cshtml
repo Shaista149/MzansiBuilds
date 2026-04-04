@@ -1,0 +1,36 @@
+﻿@model IEnumerable<MzansiBuilds.Models.Celebration>
+
+@{
+    ViewBag.Title = "Celebration Wall";
+}
+
+<h2>Celebration Wall</h2>
+<p>Projects that have been completed by our community of developers</p>
+
+<hr />
+
+@if (Model.Any())
+{
+    foreach (var celebration in Model)
+    {
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title"> @celebration.Project.Title</h3>
+            </div>
+            <div class="panel-body">
+                <p>@celebration.Project.Description</p>
+                <p>
+                    <strong>Built by:</strong> @celebration.Developer.Username &nbsp;|&nbsp;
+                    <strong>Completed:</strong> @celebration.CelebratedAt.ToString("dd MMM yyyy")
+                </p>
+                @Html.ActionLink("View Project", "Details", "Projects",
+                    new { id = celebration.ProjectId },
+                    new { @class = "btn btn-success btn-sm" })
+            </div>
+        </div>
+    }
+}
+else
+{
+    <p class="text-muted">No completed projects yet - be the first to ship something!</p>
+}
