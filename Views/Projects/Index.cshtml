@@ -5,48 +5,243 @@
     ViewBag.Title = "Live Feed";
 }
 
-<h2>Live Feed</h2>
-<p>See what developers are building across the community</p>
+<!-- Page heading -->
+<div class="page-hero" style="margin-bottom: 2px;">
+    <h2>Live <span class="green-text">Feed</span></h2>
+    <p style="margin-top: 10px;">See what developers are building across the community</p>
+</div>
 
-@if (Request.IsAuthenticated)
-{
-    <p>@Html.ActionLink("+ Share Your Project", "Create", new { }, new { @class = "btn btn-primary" })</p>
-}
+<!-- Search bar via applyFilters() -->
+<div style="position: relative; margin-bottom: 16px;">
+    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); font-size: 0.85rem;"></i>
+    <input type="text" id="searchInput" placeholder="Search by project title or developer..."
+           class="form-control"
+           style="padding-left: 38px;"
+           oninput="applyFilters()" />
+</div>
 
-@foreach (var project in Model)
-{
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">@project.Title</h3>
-        </div>
-        <div class="panel-body">
-            <p>@project.Description</p>
-            <p>
-                <strong>Stage:</strong> @project.Stage &nbsp;|&nbsp;
-                <strong>By:</strong> @project.Developer.Username &nbsp;|&nbsp;
-                <strong>Posted:</strong> @project.CreatedAt.ToString("dd MMM yyyy")
-            </p>
-            @if (!string.IsNullOrEmpty(project.SupportNeeded))
-            {
-                <p><strong>Support Needed:</strong> @project.SupportNeeded</p>
-            }
-            <p>
-                @Html.ActionLink("View Details", "Details", new { id = project.ProjectId }, new { @class = "btn btn-default btn-sm" })
-
-                @if (Request.IsAuthenticated)
-                {
-                    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
-                    if (project.Developer.UserId == userId)
-                    {
-                        @Html.ActionLink("Edit", "Edit", new { id = project.ProjectId }, new { @class = "btn btn-warning btn-sm" })
-                    }
-                }
-            </p>
-        </div>
+<!-- Stage filter buttons + Share Project button -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div class="filter-bar" id="stageFilter" style="margin-bottom: 0;">
+        <!-- Filter buttons - each calls filterProjects() with the relevant stage string -->
+        <button class="filter-btn active" onclick="filterProjects('All', this)">All</button>
+        <button class="filter-btn" onclick="filterProjects('Idea', this)">Idea</button>
+        <button class="filter-btn" onclick="filterProjects('In Progress', this)">In Progress</button>
+        <button class="filter-btn" onclick="filterProjects('MVP', this)">MVP</button>
+        <button class="filter-btn" onclick="filterProjects('Completed', this)">Completed</button>
+        <!-- Mine filter only shown to authenticated users -->
+        @if (Request.IsAuthenticated)
+        {
+            <button class="filter-btn" onclick="filterProjects('Mine', this)">My Projects</button>
+        }
     </div>
-}
 
-@if (!Model.Any())
-{
-    <p>No projects yet - be the first to share one!</p>
+    <!-- Share Project button - only shown to authenticated users -->
+    @if (Request.IsAuthenticated)
+    {
+        @Html.ActionLink("+ Share Project", "Create", new { }, new { @class = "btn btn-primary" })
+    }
+</div>
+
+<!-- Live project count - updated by applyFilters() as filters change -->
+<p style="font-size: 0.8rem; color: rgba(255,255,255,0.25); margin-bottom: 20px;" id="projectCount">
+    @Model.Count() project@(Model.Count() == 1 ? "" : "s") in the community
+</p>
+
+<!-- Project cards container - filtered client-side, no page reload -->
+<div id="projectsContainer">
+
+    @if (!Model.Any())
+    {
+        <!-- Empty state when no projects exist yet -->
+        <div style="text-align: center; padding: 80px 20px;">
+            <p style="font-size: 1rem; color: rgba(255,255,255,0.3);">No projects yet - be the first to share one!</p>
+            @if (Request.IsAuthenticated)
+            {
+                @Html.ActionLink("Share Your Project", "Create", new { }, new { @class = "btn btn-primary", style = "margin-top: 16px;" })
+            }
+        </div>
+    }
+    else
+    {
+        foreach (var project in Model)
+        {
+            <!-- Resolve stage badge CSS class for each project -->
+            var stageClass = "";
+            var stageLabel = project.Stage ?? "Unknown";
+            switch (stageLabel)
+            {
+                case "Idea": stageClass = "stage-idea"; break;
+                case "In Progress": stageClass = "stage-in-progress"; break;
+                case "MVP": stageClass = "stage-mvp"; break;
+                case "Completed": stageClass = "stage-completed"; break;
+                default: stageClass = "label-default"; break;
+            }
+
+            <!-- data-* attributes are read by the client-side filter/search logic -->
+            <div class="panel panel-default project-card"
+                 data-stage="@project.Stage"
+                 data-title="@project.Title"
+                 data-dev="@(project.Developer.IsDeleted ? "deleted user" : project.Developer.Username)"
+                 data-desc="@project.Description"
+                 data-ownerid="@project.Developer.UserId">
+
+                <!-- Card header: project title + stage badge -->
+                <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 class="panel-title">@project.Title</h3>
+                    <span class="stage-badge @stageClass">@project.Stage</span>
+                </div>
+
+                <div class="panel-body">
+
+                    <!-- Project description -->
+                    <p style="margin-bottom: 14px; color: rgba(255,255,255,0.75); font-size: 0.88rem;">@project.Description</p>
+
+                    <!-- Project metadata: developer, date, comment count, collaborator count -->
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.78rem; color: rgba(255,255,255,0.35); margin-bottom: 14px;">
+                        <span>
+                            <i class="fa-solid fa-user" style="color: #22c55e; margin-right: 5px;"></i>
+                            @if (project.Developer.IsDeleted)
+                            {
+                                <span style="color: rgba(255,255,255,0.25);">Deleted User</span>
+                            }
+                            else
+                            {
+                                @Html.ActionLink(project.Developer.Username, "View", "Profile", new { id = project.Developer.DeveloperId }, new { style = "color: rgba(255,255,255,0.35); font-size: 0.78rem;" })
+                            }
+                        </span>
+                        <span><i class="fa-regular fa-calendar" style="margin-right: 5px;"></i>@project.CreatedAt.ToString("dd MMM yyyy")</span>
+                        <span><i class="fa-regular fa-comment" style="margin-right: 5px;"></i>@(project.Comments?.Count ?? 0)</span>
+                        <span>
+                            <i class="fa-solid fa-handshake" style="margin-right: 5px;"></i>
+                            @(project.CollaborationRequests?.Count(r => r.Status == "Accepted") ?? 0)
+                            collaborator@(project.CollaborationRequests?.Count(r => r.Status == "Accepted") == 1 ? "" : "s")
+                        </span>
+                    </div>
+
+                    <!-- Support Needed callout - only shown if the owner filled it in -->
+                    @if (!string.IsNullOrEmpty(project.SupportNeeded))
+                    {
+                        <div style="background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.12); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; font-size: 0.8rem; color: rgba(255,255,255,0.5);">
+                            <i class="fa-solid fa-circle-question" style="color: #22c55e; margin-right: 5px;"></i>
+                            <strong style="color: #22c55e;">Support Needed:</strong> @project.SupportNeeded
+                        </div>
+                    }
+
+                    <!-- Ownership / collaboration tags - only shown to authenticated users -->
+                    @if (Request.IsAuthenticated)
+                    {
+                        var currentUserId = System.Web.HttpContext.Current.User.Identity.GetUserId();
+                        var isProjectOwner = project.Developer.UserId == currentUserId;
+                        var isCollaborator = project.CollaborationRequests != null &&
+                            project.CollaborationRequests.Any(r => r.Requester != null &&
+                                                                    r.Requester.UserId == currentUserId &&
+                                                                    r.Status == "Accepted");
+
+                        if (isProjectOwner || isCollaborator)
+                        {
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                                <!-- YOUR PROJECT tag shown to the owner -->
+                                @if (isProjectOwner)
+                                {
+                                    <span style="font-size: 0.7rem; font-weight: 700; background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 2px 10px; letter-spacing: 0.4px;">
+                                        <i class="fa-solid fa-crown" style="margin-right: 4px; font-size: 0.65rem;"></i>YOUR PROJECT
+                                    </span>
+                                }
+                                <!-- COLLABORATING tag shown to accepted collaborators -->
+                                @if (isCollaborator)
+                                {
+                                    <span style="font-size: 0.7rem; font-weight: 700; background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); border-radius: 20px; padding: 2px 10px; letter-spacing: 0.4px;">
+                                        <i class="fa-solid fa-handshake" style="margin-right: 4px; font-size: 0.65rem;"></i>COLLABORATING
+                                    </span>
+                                }
+                            </div>
+                        }
+                    }
+
+                    <!-- Action buttons - Edit and Delete only shown to the project owner -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        @Html.ActionLink("View Details", "Details", new { id = project.ProjectId }, new { @class = "btn btn-default btn-sm" })
+                        @if (Request.IsAuthenticated)
+                        {
+                            var currentUserId2 = System.Web.HttpContext.Current.User.Identity.GetUserId();
+                            if (project.Developer.UserId == currentUserId2)
+                            {
+                                @Html.ActionLink("Edit", "Edit", new { id = project.ProjectId }, new { @class = "btn btn-warning btn-sm" })
+                                @Html.ActionLink("Delete", "Delete", new { id = project.ProjectId }, new { @class = "btn btn-danger btn-sm" })
+                            }
+                        }
+                    </div>
+
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Shown when search/filter returns zero matches -->
+<p id="noResults" style="display: none; text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.3);">
+    No projects in this stage yet.
+</p>
+
+@section scripts {
+    <script>
+        // Tracks the currently active stage filter
+        var activeStage = 'All';
+
+        // Current user's ID - used to power the "Mine" filter without a server round-trip
+        var currentUserId = '@(Request.IsAuthenticated ? System.Web.HttpContext.Current.User.Identity.GetUserId() : "")';
+
+        // Called when a stage filter button is clicked - updates activeStage and re-applies all filters
+        function filterProjects(stage, btn) {
+            document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            activeStage = stage;
+            applyFilters();
+        }
+
+        // Runs on every search input change and filter click - hides non-matching cards and updates the count
+        function applyFilters() {
+            var searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            var cards = document.querySelectorAll('.project-card');
+            var visible = 0;
+
+            cards.forEach(function (card) {
+                // Stage match: All passes everything, Mine matches on owner ID
+                var stageMatch = activeStage === 'All'
+                    || card.getAttribute('data-stage') === activeStage
+                    || (activeStage === 'Mine' && card.getAttribute('data-ownerid') === currentUserId);
+
+                // Search match: checks title, developer name, and description
+                var title = (card.getAttribute('data-title') || '').toLowerCase();
+                var dev = (card.getAttribute('data-dev') || '').toLowerCase();
+                var desc = (card.getAttribute('data-desc') || '').toLowerCase();
+                var searchMatch = searchTerm === '' || title.includes(searchTerm) || dev.includes(searchTerm) || desc.includes(searchTerm);
+
+                if (stageMatch && searchMatch) {
+                    card.style.display = '';
+                    visible++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show empty state message if nothing is visible
+            document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+
+            // Update the project count label dynamically
+            document.getElementById('projectCount').textContent =
+                visible + ' project' + (visible === 1 ? '' : 's') +
+                (activeStage === 'All' ? ' in the community' : activeStage === 'Mine' ? ' of yours' : ' in ' + activeStage);
+        }
+
+        // Ctrl+F / Cmd+F shortcut focuses the search bar instead of the browser's native find
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+                document.getElementById('searchInput').select();
+            }
+        });
+    </script>
 }

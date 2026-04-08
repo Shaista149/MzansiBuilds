@@ -1,0 +1,130 @@
+﻿@model MzansiBuilds.Models.Developer
+
+@{
+    ViewBag.Title = "My Profile";
+}
+
+<!-- Page heading -->
+<div class="page-hero" style="margin-bottom: 16px; padding: 16px 0 10px 0;">
+    <h2>My <span class="green-text">Profile</span></h2>
+    <p>Manage your developer profile</p>
+</div>
+
+<!-- Success / error feedback messages (set via TempData in ProfileController) -->
+@if (TempData["Success"] != null)
+{
+    <div style="background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; color: #4ade80; font-size: 0.85rem;">
+        <i class="fa-solid fa-circle-check" style="margin-right: 8px;"></i>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.28); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; color: #f87171; font-size: 0.85rem;">
+        <i class="fa-solid fa-circle-exclamation" style="margin-right: 8px;"></i>@TempData["Error"]
+    </div>
+}
+
+<!-- Two-column layout: profile summary on left, edit form on right -->
+<div style="display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: stretch;">
+
+    <!-- Left: Profile summary card -->
+    <div class="panel panel-default" style="margin-bottom: 0; display: flex; flex-direction: column;">
+        <div class="panel-body" style="padding: 20px 18px; display: flex; flex-direction: column; flex: 1;">
+
+            <!-- Avatar icon, username, and join date -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 2px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+                    <i class="fa-solid fa-user" style="color: #22c55e; font-size: 1.3rem;"></i>
+                </div>
+                <h3 style="margin: 0 0 3px 0; font-size: 1.1rem; color: #fff;">@Model.Username</h3>
+                <p style="margin: 0; font-size: 0.75rem; color: rgba(255,255,255,0.35);">
+                    <i class="fa-regular fa-calendar" style="margin-right: 3px;"></i>Joined @Model.CreatedAt.ToString("dd MMM yyyy")
+                </p>
+            </div>
+
+            <!-- Bio - only rendered if the developer has set one -->
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.55); line-height: 1.6; margin: 0 0 14px 0; text-align: center;">@Model.Bio</p>
+            }
+
+            <!-- Project count stat -->
+            <div style="padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px; text-align: center;">
+                <div style="font-size: 1.3rem; font-weight: 800; color: #22c55e;">@(Model.Projects?.Count() ?? 0)</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.5px;">Projects</div>
+            </div>
+
+            <!-- Quick navigation links -->
+            <div style="display: flex; flex-direction: column; gap: 9px; flex: 1;">
+                @Html.ActionLink("View My Public Profile", "View", "Profile",
+                    new { id = Model.DeveloperId },
+                    new { style = "font-size: 0.82rem; color: rgba(255,255,255,0.55);" })
+
+                <a href="/Manage/ChangePassword" style="font-size: 0.82rem; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 7px;">
+                    <i class="fa-solid fa-lock" style="color: rgba(255,255,255,0.3); width: 12px;"></i>Change Password
+                </a>
+            </div>
+
+            <!-- Delete account link - separated and styled in muted red to signal danger -->
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(239,68,68,0.15);">
+                <a href="/Manage/DeleteAccount" style="font-size: 0.8rem; color: rgba(239,68,68,0.55); display: flex; align-items: center; gap: 7px;">
+                    <i class="fa-solid fa-trash" style="width: 12px;"></i>Delete Account
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Right: Edit profile form -->
+    <div class="panel panel-default" style="margin-bottom: 0;">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa-solid fa-pen" style="color: #22c55e; margin-right: 8px;"></i>Edit Profile</h3>
+        </div>
+        <div class="panel-body" style="padding: 20px 22px;">
+
+            <!-- Profile update form - posts to ProfileController.Update -->
+            @using (Html.BeginForm("Update", "Profile", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <!-- Username field - shown to other developers across the platform -->
+                <div style="margin-bottom: 16px;">
+                    <label class="control-label">Username</label>
+                    <input type="text" name="username" class="form-control" value="@Model.Username"
+                           placeholder="Your username" maxlength="50" style="margin-top: 5px;" />
+                    <small class="text-muted" style="display: block; margin-top: 5px; font-size: 0.76rem;">
+                        This is how other developers will see you across the platform
+                    </small>
+                </div>
+
+                <!-- Bio field - optional, publicly visible on the developer's profile -->
+                <div style="margin-bottom: 16px;">
+                    <label class="control-label">
+                        Bio <span style="color: rgba(255,255,255,0.3); font-weight: 400; text-transform: none; font-size: 0.76rem;">optional</span>
+                    </label>
+                    <textarea name="bio" class="form-control" rows="2"
+                              placeholder="Tell the community a bit about yourself..."
+                              maxlength="300" style="margin-top: 5px; min-height: 0;">@Model.Bio</textarea>
+                    <small class="text-muted" style="display: block; margin-top: 4px; font-size: 0.76rem;">Max 300 characters</small>
+                </div>
+
+                <!-- Email - read-only display; not publicly visible, cannot be changed here -->
+                <div style="margin-bottom: 18px;">
+                    <label class="control-label">Email</label>
+                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.38); margin: 5px 0 0 0;">
+                        <i class="fa-regular fa-envelope" style="margin-right: 5px;"></i>@Model.Email
+                        <span style="font-size: 0.73rem; color: rgba(255,255,255,0.22); margin-left: 6px;">not publicly visible</span>
+                    </p>
+                </div>
+
+                <!-- Form action buttons -->
+                <div style="padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary btn-sm" style="padding: 8px 20px;">Save Changes</button>
+                    @Html.ActionLink("Cancel", "Index", "Projects", null, new { @class = "btn btn-default btn-sm", style = "padding: 8px 16px;" })
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>

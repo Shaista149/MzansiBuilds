@@ -1,43 +1,101 @@
 ﻿@model MzansiBuilds.Models.RegisterViewModel
+
 @{
     ViewBag.Title = "Register";
 }
 
-<main aria-labelledby="title">
-    <h2 id="title">@ViewBag.Title.</h2>
+<!-- Centered registration card layout -->
+<div style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 0;">
+    <div style="width: 100%; max-width: 440px;">
 
-    @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { role = "form" }))
-    {
-        @Html.AntiForgeryToken()
-        <h4>Create a new account.</h4>
-        <hr />
-        @Html.ValidationSummary("", new { @class = "text-danger" })
-        <div class="row">
-            @Html.LabelFor(m => m.Email, new { @class = "col-md-2 col-form-label" })
-            <div class="col-md-10">
-                @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+        <!-- Page heading -->
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="font-size: 2.2rem; margin-bottom: 6px;">Join <span class="green-text">MzansiBuilds</span></h2>
+            <p style="font-size: 0.9rem" class="text-muted">Create your account and start building in public</p>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-body" style="padding: 20px;">
+
+                <!-- Registration form - posts to AccountController.Register -->
+                @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { role = "form" }))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <!-- Validation summary shows all field errors at the top -->
+                    @Html.ValidationSummary("", new { @class = "text-danger" })
+
+                    <!-- Email field -->
+                    <div style="margin-bottom: 20px;">
+                        @Html.LabelFor(m => m.Email, new { @class = "control-label" })
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "you@example.com" })
+                        @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+                    </div>
+
+                    <!-- Password field with eye toggle and hint text -->
+                    <div style="margin-bottom: 20px;">
+                        @Html.LabelFor(m => m.Password, new { @class = "control-label" })
+                        <div style="position: relative;">
+                            @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Min. 8 characters", id = "regPassword", style = "padding-right: 42px;" })
+                            <!-- Toggle password visibility -->
+                            <button type="button" onclick="togglePassword('regPassword', this)"
+                                    style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; padding: 0; font-size: 0.9rem;">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                        <small class="text-muted" style="display: block; margin-top: 6px; font-size: 0.78rem;">Must be at least 8 characters long</small>
+                    </div>
+
+                    <!-- Confirm password field with eye toggle -->
+                    <div style="margin-bottom: 28px;">
+                        @Html.LabelFor(m => m.ConfirmPassword, new { @class = "control-label" })
+                        <div style="position: relative;">
+                            @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "Repeat your password", id = "regConfirmPassword", style = "padding-right: 42px;" })
+                            <!-- Toggle confirm password visibility -->
+                            <button type="button" onclick="togglePassword('regConfirmPassword', this)"
+                                    style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; padding: 0; font-size: 0.9rem;">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "text-danger" })
+                    </div>
+
+                    <input type="submit" value="Create Account" class="btn btn-primary" style="width: 100%; padding: 11px; font-size: 0.95rem;" />
+                }
+
+                <!-- Link back to login -->
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin: 0;">
+                        Already have an account? @Html.ActionLink("Log in here", "Login", "Account")
+                    </p>
+                </div>
+
             </div>
         </div>
-        <div class="row">
-            @Html.LabelFor(m => m.Password, new { @class = "col-md-2 col-form-label" })
-            <div class="col-md-10">
-                @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
-            </div>
-        </div>
-        <div class="row">
-            @Html.LabelFor(m => m.ConfirmPassword, new { @class = "col-md-2 col-form-label" })
-            <div class="col-md-10">
-                @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control" })
-            </div>
-        </div>
-        <div class="row">
-            <div class="offset-md-2 col-md-10">
-                <input type="submit" value="Register" class="btn btn-outline-dark" />
-            </div>
-        </div>
-    }
-</main>
+
+    </div>
+</div>
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+
+    <!-- Toggles password field between text and password type, swaps eye icon accordingly -->
+    <script>
+        function togglePassword(fieldId, btn) {
+            var field = document.getElementById(fieldId);
+            var icon = btn.querySelector('i');
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                btn.style.color = 'rgba(255,255,255,0.7)';
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                btn.style.color = 'rgba(255,255,255,0.35)';
+            }
+        }
+    </script>
 }

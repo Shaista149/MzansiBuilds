@@ -17,7 +17,6 @@ namespace MzansiBuilds.Models
 
         // Links the Developer profile to the ASP.NET Identity user (login system)
         // One Identity user = one Developer profile
-
         public string UserId { get; set; }
 
         [Required]
@@ -31,6 +30,8 @@ namespace MzansiBuilds.Models
         public string Bio { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public bool IsDeleted { get; set; } = false;
 
         // Navigation properties : EF uses these to understand relationships
         // "A developer has many projects"

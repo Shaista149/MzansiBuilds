@@ -23,10 +23,12 @@ namespace MzansiBuilds.Models
         [StringLength(200)]
         public string Title { get; set; }
 
+        [Required]
         public string Description { get; set; }
 
         // "Idea", "In Progress", "MVP", "Completed"
         [StringLength(50)]
+        [Required]
         public string Stage { get; set; }
 
         public string SupportNeeded { get; set; }

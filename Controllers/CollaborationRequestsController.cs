@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNet.Identity;
 using MzansiBuilds.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Web;
 using System.Web.Mvc;
+using System.Data.Entity;
 
 namespace MzansiBuilds.Controllers
 {
@@ -16,7 +15,7 @@ namespace MzansiBuilds.Controllers
     {
         private ApplicationDbContext db = new ApplicationDbContext();
 
-        // POST - send a collaboration request on a project
+        // POST : send a collaboration request on a project
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -57,7 +56,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("Details", "Projects", new { id = projectId });
         }
 
-        // POST - project owner responds to a request
+        // POST : project owner responds to a request
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -84,6 +83,48 @@ namespace MzansiBuilds.Controllers
             }
 
             return RedirectToAction("Details", "Projects", new { id = request.ProjectId });
+        }
+
+        // GET : show all collaboration requests on the logged-in user's projects
+        [Authorize]
+        public ActionResult Index()
+        {
+            var developer = GetCurrentDeveloper();
+            if (developer == null)
+                return RedirectToAction("Index", "Home");
+
+            var requests = db.CollaborationRequests
+                .Include(r => r.Project)
+                .Include(r => r.Requester)
+                .Where(r => r.Project.DeveloperId == developer.DeveloperId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+
+            return View(requests);
+        }
+
+        // POST : requester withdraws their own pending request
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Withdraw(int requestId, int projectId)
+        {
+            var developer = GetCurrentDeveloper();
+            if (developer == null)
+                return new HttpStatusCodeResult(HttpStatusCode.Unauthorized);
+
+            var request = db.CollaborationRequests
+                .FirstOrDefault(r => r.RequestId == requestId
+                                  && r.RequesterId == developer.DeveloperId
+                                  && r.Status == "Pending");
+
+            if (request != null)
+            {
+                db.CollaborationRequests.Remove(request);
+                db.SaveChanges();
+            }
+
+            return RedirectToAction("Details", "Projects", new { id = projectId });
         }
 
         // Helper method to get the currently logged in developer's profile

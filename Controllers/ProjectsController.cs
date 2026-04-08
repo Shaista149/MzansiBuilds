@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNet.Identity;
 using MzansiBuilds.Models;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
 using System.Linq;
 using System.Net;
-using System.Web;
 using System.Web.Mvc;
 
 namespace MzansiBuilds.Controllers
@@ -25,11 +23,14 @@ namespace MzansiBuilds.Controllers
         {
             var projects = db.Projects
                 .Include(p => p.Developer)
+                .Include(p => p.Comments)
+                .Include(p => p.CollaborationRequests.Select(r => r.Requester))
                 .OrderByDescending(p => p.CreatedAt)
                 .ToList();
 
             return View(projects);
         }
+
 
         // Details of a single project
         public ActionResult Details(int? id)
@@ -116,6 +117,16 @@ namespace MzansiBuilds.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.Forbidden);
 
             return View(project);
+
+/*            // Check if user is owner OR accepted collaborator
+            var isOwner = project.DeveloperId == developer.DeveloperId;
+            var isAcceptedCollaborator = db.CollaborationRequests
+                .Any(r => r.ProjectId == project.ProjectId
+                       && r.Requester.UserId == userId
+                       && r.Status == "Accepted");
+
+            if (!isOwner && !isAcceptedCollaborator)
+                return new HttpStatusCodeResult(HttpStatusCode.Forbidden);*/
         }
 
         [Authorize]

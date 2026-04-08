@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Globalization;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
@@ -53,8 +51,7 @@ namespace MzansiBuilds.Controllers
             }
         }
 
-        //
-        // GET: /Account/Login
+        // GET : /Account/Login
         [AllowAnonymous]
         public ActionResult Login(string returnUrl)
         {
@@ -62,8 +59,7 @@ namespace MzansiBuilds.Controllers
             return View();
         }
 
-        //
-        // POST: /Account/Login
+        // POST : /Account/Login
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -87,13 +83,16 @@ namespace MzansiBuilds.Controllers
                     return RedirectToAction("SendCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
                 case SignInStatus.Failure:
                 default:
-                    ModelState.AddModelError("", "Invalid login attempt.");
+                    var existingUser = await UserManager.FindByEmailAsync(model.Email);
+                    if (existingUser == null)
+                        ModelState.AddModelError("", "No account found with that email address.");
+                    else
+                        ModelState.AddModelError("", "Incorrect password. Please try again.");
                     return View(model);
             }
         }
 
-        //
-        // GET: /Account/VerifyCode
+        // GET : /Account/VerifyCode
         [AllowAnonymous]
         public async Task<ActionResult> VerifyCode(string provider, string returnUrl, bool rememberMe)
         {
@@ -105,8 +104,7 @@ namespace MzansiBuilds.Controllers
             return View(new VerifyCodeViewModel { Provider = provider, ReturnUrl = returnUrl, RememberMe = rememberMe });
         }
 
-        //
-        // POST: /Account/VerifyCode
+        // POST : /Account/VerifyCode
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -135,16 +133,14 @@ namespace MzansiBuilds.Controllers
             }
         }
 
-        //
-        // GET: /Account/Register
+        // GET : /Account/Register
         [AllowAnonymous]
         public ActionResult Register()
         {
             return View();
         }
 
-        //
-        // POST: /Account/Register
+        // POST : /Account/Register
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -178,15 +174,20 @@ namespace MzansiBuilds.Controllers
 
                     return RedirectToAction("Index", "Home");
                 }
-                AddErrors(result);
+                if (result.Errors.Any(e => e.Contains("already taken") || e.Contains("is already")))
+                {
+                    ModelState.AddModelError("", "An account with that email address already exists.");
+                }
+                else
+                {
+                    AddErrors(result);
+                }
             }
-
             // If we got this far, something failed, redisplay form
             return View(model);
         }
 
-        //
-        // GET: /Account/ConfirmEmail
+        // GET : /Account/ConfirmEmail
         [AllowAnonymous]
         public async Task<ActionResult> ConfirmEmail(string userId, string code)
         {
@@ -198,16 +199,14 @@ namespace MzansiBuilds.Controllers
             return View(result.Succeeded ? "ConfirmEmail" : "Error");
         }
 
-        //
-        // GET: /Account/ForgotPassword
+        // GET : /Account/ForgotPassword
         [AllowAnonymous]
         public ActionResult ForgotPassword()
         {
             return View();
         }
 
-        //
-        // POST: /Account/ForgotPassword
+        // POST : /Account/ForgotPassword
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -234,24 +233,21 @@ namespace MzansiBuilds.Controllers
             return View(model);
         }
 
-        //
-        // GET: /Account/ForgotPasswordConfirmation
+        // GET : /Account/ForgotPasswordConfirmation
         [AllowAnonymous]
         public ActionResult ForgotPasswordConfirmation()
         {
             return View();
         }
 
-        //
-        // GET: /Account/ResetPassword
+        // GET : /Account/ResetPassword
         [AllowAnonymous]
         public ActionResult ResetPassword(string code)
         {
             return code == null ? View("Error") : View();
         }
 
-        //
-        // POST: /Account/ResetPassword
+        // POST : /Account/ResetPassword
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -276,16 +272,14 @@ namespace MzansiBuilds.Controllers
             return View();
         }
 
-        //
-        // GET: /Account/ResetPasswordConfirmation
+        // GET : /Account/ResetPasswordConfirmation
         [AllowAnonymous]
         public ActionResult ResetPasswordConfirmation()
         {
             return View();
         }
 
-        //
-        // POST: /Account/ExternalLogin
+        // POST : /Account/ExternalLogin
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -295,8 +289,7 @@ namespace MzansiBuilds.Controllers
             return new ChallengeResult(provider, Url.Action("ExternalLoginCallback", "Account", new { ReturnUrl = returnUrl }));
         }
 
-        //
-        // GET: /Account/SendCode
+        // GET : /Account/SendCode
         [AllowAnonymous]
         public async Task<ActionResult> SendCode(string returnUrl, bool rememberMe)
         {
@@ -310,8 +303,7 @@ namespace MzansiBuilds.Controllers
             return View(new SendCodeViewModel { Providers = factorOptions, ReturnUrl = returnUrl, RememberMe = rememberMe });
         }
 
-        //
-        // POST: /Account/SendCode
+        // POST : /Account/SendCode
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -330,8 +322,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("VerifyCode", new { Provider = model.SelectedProvider, ReturnUrl = model.ReturnUrl, RememberMe = model.RememberMe });
         }
 
-        //
-        // GET: /Account/ExternalLoginCallback
+        // GET : /Account/ExternalLoginCallback
         [AllowAnonymous]
         public async Task<ActionResult> ExternalLoginCallback(string returnUrl)
         {
@@ -360,8 +351,7 @@ namespace MzansiBuilds.Controllers
             }
         }
 
-        //
-        // POST: /Account/ExternalLoginConfirmation
+        // POST : /Account/ExternalLoginConfirmation
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -398,8 +388,7 @@ namespace MzansiBuilds.Controllers
             return View(model);
         }
 
-        //
-        // POST: /Account/LogOff
+        // POST : /Account/LogOff
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult LogOff()
@@ -408,8 +397,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        //
-        // GET: /Account/ExternalLoginFailure
+        // GET : /Account/ExternalLoginFailure
         [AllowAnonymous]
         public ActionResult ExternalLoginFailure()
         {

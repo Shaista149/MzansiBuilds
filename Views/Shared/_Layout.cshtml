@@ -6,38 +6,85 @@
     <title>@ViewBag.Title - MzansiBuilds</title>
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
-
+    <!-- Google Fonts: Inter for body text, Space Grotesk for headings -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons used throughout the app -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
+
+    <!-- Top navigation bar -->
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark">
         <div class="container">
+            <!-- Brand logo / home link -->
             @Html.ActionLink("MzansiBuilds", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
-            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Toggle navigation" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
+
+            <!-- Mobile hamburger toggle -->
+            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
+                <!-- Main navigation links - active page highlighted via JS below -->
                 <ul class="navbar-nav flex-grow-1">
-                    <li>@Html.ActionLink("Home", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("Projects", "Index", "Projects", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("Celebration Wall", "Index", "Celebration", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("About", "About", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                    <li>@Html.ActionLink("Contact", "Contact", "Home", new { area = "" }, new { @class = "nav-link" })</li>
+                    <li class="nav-item">@Html.ActionLink("Home", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
+                    <li class="nav-item">@Html.ActionLink("Projects", "Index", "Projects", new { area = "" }, new { @class = "nav-link" })</li>
+                    <li class="nav-item">@Html.ActionLink("Celebration Wall", "Index", "Celebration", new { area = "" }, new { @class = "nav-link" })</li>
                 </ul>
-                 @Html.Partial("_LoginPartial")
+
+                <!-- Login/logout partial - renders hello + bell icon if authenticated, Register/Login if not -->
+                @Html.Partial("_LoginPartial")
             </div>
         </div>
     </nav>
+
+    <!-- Main content area - constrained to max-width in site.css -->
     <div class="container body-content">
         @RenderBody()
-        <hr />
         <footer>
-            <p>&copy; @DateTime.Now.Year - MzansiBuilds</p>
+            <p>&copy; @DateTime.Now.Year MzansiBuilds - Build in public. Build together.</p>
         </footer>
     </div>
+
+    <!-- Scroll to top button - hidden by default, appears after scrolling 300px -->
+    <button id="scrollTopBtn" onclick="scrollToTop()" title="Back to top">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
     @RenderSection("scripts", required: false)
+
+    <script>
+        // Show/hide scroll-to-top button based on scroll position
+        var scrollBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', function () {
+            if (window.scrollY > 300) {
+                scrollBtn.classList.add('visible');
+            } else {
+                scrollBtn.classList.remove('visible');
+            }
+        });
+
+        // Smooth scroll back to top of page
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Highlight the active nav link by comparing the current URL path to each link's href
+        (function () {
+            var path = window.location.pathname.toLowerCase();
+            var links = document.querySelectorAll('.navbar-nav .nav-link');
+            links.forEach(function (link) {
+                var href = link.getAttribute('href').toLowerCase();
+                if (href === '/' && path === '/') {
+                    link.classList.add('nav-active');
+                } else if (href !== '/' && path.startsWith(href)) {
+                    link.classList.add('nav-active');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

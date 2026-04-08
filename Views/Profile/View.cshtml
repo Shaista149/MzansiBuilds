@@ -1,0 +1,114 @@
+﻿@model MzansiBuilds.Models.Developer
+@using Microsoft.AspNet.Identity
+
+@{
+    // Set page title based on whether the account is deleted
+    ViewBag.Title = Model.IsDeleted ? "Deleted User" : Model.Username + "'s Profile";
+    var currentUserId = Request.IsAuthenticated
+        ? System.Web.HttpContext.Current.User.Identity.GetUserId()
+        : null;
+    var isOwnProfile = currentUserId != null && Model.UserId == currentUserId;
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<!-- Back navigation link -->
+<div style="margin-bottom: 16px; margin-top: 16px;">
+    @Html.ActionLink("← Back to Feed", "Index", "Projects", null, new { style = "font-size: 0.82rem; color: rgba(255,255,255,0.35);" })
+</div>
+
+@if (Model.IsDeleted)
+{
+    <!-- Deleted account state - account is soft-deleted so their project history is preserved -->
+    <div class="panel panel-default" style="max-width: 500px; margin: 40px auto; text-align: center;">
+        <div class="panel-body" style="padding: 40px 28px;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                <i class="fa-solid fa-user-slash" style="color: rgba(255,255,255,0.25); font-size: 1.3rem;"></i>
+            </div>
+            <h3 style="color: rgba(255,255,255,0.4); margin: 0 0 8px 0; font-size: 1.1rem;">Deleted User</h3>
+            <p style="color: rgba(255,255,255,0.25); font-size: 0.85rem; margin: 0;">This account has been deleted. Their projects and contributions remain visible.</p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Profile header card: avatar, username, join date, project count, bio -->
+    <div class="panel panel-default" style="margin-bottom: 20px;">
+        <div class="panel-body" style="padding: 28px;">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 2px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fa-solid fa-user" style="color: #22c55e; font-size: 1.4rem;"></i>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+                        <h2 style="margin: 0; font-size: 1.6rem;">@Model.Username</h2>
+                        @if (isOwnProfile)
+                        {
+                            <span style="font-size: 0.7rem; font-weight: 700; background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 2px 10px;">
+                                <i class="fa-solid fa-crown" style="margin-right: 4px; font-size: 0.65rem;"></i>YOU
+                            </span>
+                        }
+                    </div>
+                    <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.35);">
+                        <i class="fa-regular fa-calendar" style="margin-right: 5px;"></i>Joined @Model.CreatedAt.ToString("dd MMM yyyy")
+                        &nbsp;&middot;&nbsp;
+                        <i class="fa-solid fa-diagram-project" style="margin-right: 5px;"></i>@Model.Projects.Count project@(Model.Projects.Count == 1 ? "" : "s")
+                    </p>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <p style="margin: 20px 0 0 0; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.7;">@Model.Bio</p>
+            }
+        </div>
+    </div>
+
+    <!-- Projects section header -->
+    <div style="margin-bottom: 14px;">
+        <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0;">
+            <i class="fa-solid fa-rocket" style="margin-right: 6px;"></i>Projects
+        </p>
+    </div>
+
+    if (Model.Projects != null && Model.Projects.Any())
+    {
+        foreach (var project in Model.Projects.OrderByDescending(p => p.CreatedAt))
+        {
+            var stageClass = "";
+            switch (project.Stage)
+            {
+                case "Idea": stageClass = "stage-idea"; break;
+                case "In Progress": stageClass = "stage-in-progress"; break;
+                case "MVP": stageClass = "stage-mvp"; break;
+                case "Completed": stageClass = "stage-completed"; break;
+                default: stageClass = "label-default"; break;
+            }
+
+            <div class="panel panel-default">
+                <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 class="panel-title">@project.Title</h3>
+                    <span class="stage-badge @stageClass">@project.Stage</span>
+                </div>
+                <div class="panel-body">
+                    @if (!string.IsNullOrEmpty(project.Description))
+                    {
+                        <p style="font-size: 0.88rem; color: rgba(255,255,255,0.7); margin-bottom: 14px;">@project.Description</p>
+                    }
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        @Html.ActionLink("View Project", "Details", "Projects", new { id = project.ProjectId }, new { @class = "btn btn-default btn-sm" })
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.3);">
+                            <i class="fa-regular fa-calendar" style="margin-right: 4px;"></i>@project.CreatedAt.ToString("dd MMM yyyy")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div style="text-align: center; padding: 40px 20px;">
+            <p style="color: rgba(255,255,255,0.3); font-size: 0.9rem;">No projects shared yet.</p>
+        </div>
+    }
+}

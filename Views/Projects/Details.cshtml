@@ -3,205 +3,329 @@
 
 @{
     ViewBag.Title = Model.Title;
-}
 
-<h2>@Model.Title</h2>
-<p class="text-muted">
-    Shared by <strong>@Model.Developer.Username</strong> on @Model.CreatedAt.ToString("dd MMM yyyy")
-</p>
+    // Determine if the current user is the project owner - controls edit/delete visibility and owner-only sections
+    var userId = Request.IsAuthenticated
+        ? System.Web.HttpContext.Current.User.Identity.GetUserId()
+        : null;
+    var isOwner = userId != null && Model.Developer.UserId == userId;
 
-<hr />
-
-<h4>About this project</h4>
-<p>@Model.Description</p>
-
-<p><strong>Stage:</strong> @Model.Stage</p>
-
-@if (!string.IsNullOrEmpty(Model.SupportNeeded))
-{
-    <p><strong>Support Needed:</strong> @Model.SupportNeeded</p>
-}
-
-<p>
-    <strong>Status:</strong>
-    @if (Model.IsComplete)
+    // Satge badge
+    var stageClass = "";
+    switch (Model.Stage)
     {
-        <span class="label label-success">Completed</span>
-    }
-    else
-    {
-        <span class="label label-info">In Progress</span>
-    }
-</p>
-
-<hr />
-
-<h4>Milestones</h4>
-@if (Model.Milestones != null && Model.Milestones.Any())
-{
-    foreach (var milestone in Model.Milestones.OrderByDescending(m => m.AchievedAt))
-    {
-        <div class="panel panel-default">
-            <div class="panel-body">
-                <p>@milestone.Description</p>
-                <small class="text-muted">@milestone.AchievedAt.ToString("dd MMM yyyy")</small>
-            </div>
-        </div>
+        case "Idea": stageClass = "stage-idea"; break;
+        case "In Progress": stageClass = "stage-in-progress"; break;
+        case "MVP": stageClass = "stage-mvp"; break;
+        case "Completed": stageClass = "stage-completed"; break;
+        default: stageClass = "label-default"; break;
     }
 }
-else
-{
-    <p class="text-muted">No milestones logged yet.</p>
-}
 
-@* Milestone form - only show to project owner *@
-@if (Request.IsAuthenticated)
-{
-    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
-    if (Model.Developer.UserId == userId)
-    {
-        <h5>Log a Milestone</h5>
-        using (Html.BeginForm("Create", "Milestones", FormMethod.Post))
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<!-- Back navigation link -->
+<div style="margin-bottom: 16px; margin-top: 16px;">
+    @Html.ActionLink("← Back to Feed", "Index", null, new { style = "font-size: 0.82rem; color: rgba(255,255,255,0.35);" })
+</div>
+
+<!-- Project title, stage badge, and author line -->
+<div style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
+        <h2 style="margin: 0; font-size: 1.8rem;">@Model.Title</h2>
+        <span class="stage-badge @stageClass">@Model.Stage</span>
+    </div>
+    <p class="text-muted" style="margin: 0; font-size: 0.82rem;">
+        Shared by
+        @if (Model.Developer.IsDeleted)
         {
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="projectId" value="@Model.ProjectId" />
-            <div class="form-group">
-                <textarea name="description" class="form-control" rows="2" placeholder="What did you achieve?"></textarea>
-            </div>
-            <button type="submit" class="btn btn-success btn-sm">Log Milestone</button>
-        }
-    }
-}
-
-<hr />
-
-<h4>Comments</h4>
-@if (Model.Comments != null && Model.Comments.Any())
-{
-    foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedAt))
-    {
-        <div class="panel panel-default">
-            <div class="panel-body">
-                <p>@comment.Content</p>
-                <small class="text-muted">
-                    <strong>@comment.Developer.Username</strong> - @comment.CreatedAt.ToString("dd MMM yyyy")
-                </small>
-            </div>
-        </div>
-    }
-}
-else
-{
-    <p class="text-muted">No comments yet - be the first!</p>
-}
-
-@* Comment form - any logged in user can comment *@
-@if (Request.IsAuthenticated)
-{
-    <h5>Leave a Comment</h5>
-    using (Html.BeginForm("Create", "Comments", FormMethod.Post))
-    {
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="projectId" value="@Model.ProjectId" />
-        <div class="form-group">
-            <textarea name="content" class="form-control" rows="3" placeholder="Write a comment..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
-    }
-}
-else
-{
-    <p class="text-muted"><a href="/Account/Login">Log in</a> to leave a comment.</p>
-}
-
-<hr />
-
-@* Collaboration request form - only show to users who don't own the project *@
-@if (Request.IsAuthenticated)
-{
-    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
-    if (Model.Developer.UserId != userId)
-    {
-        var existingRequest = Model.CollaborationRequests != null
-            ? Model.CollaborationRequests.FirstOrDefault(r => r.Requester.UserId == userId)
-            : null;
-
-        if (existingRequest == null)
-        {
-            <h5>Interested in collaborating?</h5>
-            using (Html.BeginForm("Create", "CollaborationRequests", FormMethod.Post))
-            {
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="projectId" value="@Model.ProjectId" />
-                <div class="form-group">
-                    <textarea name="message" class="form-control" rows="2"
-                              placeholder="Tell the developer why you'd like to collaborate..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-success btn-sm">Send Collaboration Request</button>
-            }
+            <!-- Developer has soft-deleted their account - show placeholder text -->
+            <span style="color: rgba(255,255,255,0.25); font-size: 0.82rem;">Deleted User</span>
         }
         else
         {
-            <p class="text-muted">
-                You already sent a collaboration request -
-                status: <strong>@existingRequest.Status</strong>
-            </p>
+            @Html.ActionLink(Model.Developer.Username, "View", "Profile", new { id = Model.Developer.DeveloperId }, new { style = "color: #22c55e; font-size: 0.82rem; font-weight: 600;" })
         }
-    }
-}
+        &nbsp;&middot;&nbsp; @Model.CreatedAt.ToString("dd MMM yyyy")
+    </p>
+</div>
 
-@* Collaboration requests panel - only show to project owner *@
-@if (Request.IsAuthenticated)
-{
-    var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
-    if (Model.Developer.UserId == userId && Model.CollaborationRequests != null && Model.CollaborationRequests.Any())
-    {
-        <hr />
-        <h4>Collaboration Requests</h4>
-        foreach (var req in Model.CollaborationRequests.OrderByDescending(r => r.CreatedAt))
+<!-- Single unified panel containing all project sections -->
+<div class="panel panel-default">
+    <div class="panel-body" style="padding: 0;">
+
+        <!-- About section: description and optional Support Needed callout -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 12px 0;">
+                <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>About
+            </p>
+            <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0;">@Model.Description</p>
+
+            <!-- Support Needed callout - only rendered if the owner filled it in -->
+            @if (!string.IsNullOrEmpty(Model.SupportNeeded))
+            {
+                <div style="background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.12); border-radius: 8px; padding: 10px 14px; margin-top: 14px; font-size: 0.82rem; color: rgba(255,255,255,0.6);">
+                    <strong style="color: #22c55e;">Support Needed:</strong> @Model.SupportNeeded
+                </div>
+            }
+        </div>
+
+        <!-- Milestones section - all users can view, only owner can log new ones -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 14px 0;">
+                <i class="fa-solid fa-flag-checkered" style="margin-right: 6px;"></i>Milestones
+            </p>
+
+            @if (Model.Milestones != null && Model.Milestones.Any())
+            {
+                <!-- Display milestones newest first -->
+                foreach (var milestone in Model.Milestones.OrderByDescending(m => m.AchievedAt))
+                {
+                    <div style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                        <p style="margin: 0 0 3px 0; color: rgba(255,255,255,0.8); font-size: 0.88rem;">@milestone.Description</p>
+                        <small class="text-muted">@milestone.AchievedAt.ToString("dd MMM yyyy")</small>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted" style="font-size: 0.85rem; margin: 0 0 14px 0;">No milestones logged yet.</p>
+            }
+
+            <!-- Log Milestone form - only visible to the project owner -->
+            @if (isOwner)
+            {
+                <div style="margin-top: 16px;">
+                    @{ var milestoneForm = Html.BeginForm("Create", "Milestones", FormMethod.Post); }
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                    <textarea name="description" class="form-control" rows="2" placeholder="What did you achieve?" style="margin-bottom: 8px;"></textarea>
+                    <button type="submit" class="btn btn-success btn-sm" style="margin-top: 10px">Log Milestone</button>
+                    @{ milestoneForm.Dispose(); }
+                </div>
+            }
+        </div>
+
+        <!-- Comments section - all users can view, authenticated users can post and delete their own -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 14px 0;">
+                <i class="fa-solid fa-comments" style="margin-right: 6px;"></i>Comments
+            </p>
+
+            @if (Model.Comments != null && Model.Comments.Any())
+            {
+                <!-- Display comments newest first -->
+                foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedAt))
+                {
+                    <div style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                        <div style="flex: 1;">
+                            <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.8); font-size: 0.88rem;">@comment.Content</p>
+                            <small class="text-muted">
+                                @if (comment.Developer.IsDeleted)
+                                {
+                                    <span style="color: rgba(255,255,255,0.25);">Deleted User</span>
+                                }
+                                else
+                                {
+                                    @Html.ActionLink(comment.Developer.Username, "View", "Profile", new { id = comment.Developer.DeveloperId }, new { style = "color: #22c55e; font-weight: 600;" })
+                                }
+                                &nbsp;&middot;&nbsp; @comment.CreatedAt.ToString("dd MMM yyyy")
+                            </small>
+                        </div>
+
+                        <!-- Delete button - only shown to the comment's author -->
+                        @if (Request.IsAuthenticated && !comment.Developer.IsDeleted && comment.Developer.UserId == userId)
+                        {
+                            <div>
+                                @{ var deleteCommentForm = Html.BeginForm("Delete", "Comments", FormMethod.Post); }
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="commentId" value="@comment.CommentId" />
+                                <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                                <button type="submit"
+                                        style="background: none; border: none; color: rgba(239,68,68,0.4); cursor: pointer; font-size: 0.75rem; padding: 2px 6px;"
+                                        title="Delete comment"
+                                        onclick="return confirm('Delete this comment?');">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                @{ deleteCommentForm.Dispose(); }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted" style="font-size: 0.85rem; margin: 0 0 14px 0;">No comments yet - be the first!</p>
+            }
+
+            <!-- Post comment form - only shown to authenticated users -->
+            @if (Request.IsAuthenticated)
+            {
+                <div style="margin-top: 16px;">
+                    @{ var commentForm = Html.BeginForm("Create", "Comments", FormMethod.Post); }
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                    <textarea name="content" class="form-control" rows="2" placeholder="Write a comment..." style="margin-bottom: 8px;"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 10px">Post Comment</button>
+                    @{ commentForm.Dispose(); }
+                </div>
+            }
+            else
+            {
+                <!-- Prompt unauthenticated visitors to log in before commenting -->
+                <p class="text-muted" style="margin-top: 14px; font-size: 0.85rem;"><a href="/Account/Login">Log in</a> to leave a comment.</p>
+            }
+        </div>
+
+        <!-- Collaborate section - shown to authenticated non-owners only -->
+        @if (Request.IsAuthenticated && !isOwner)
         {
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <p><strong>@req.Requester.Username</strong> wants to collaborate</p>
-                    @if (!string.IsNullOrEmpty(req.Message))
-                    {
-                        <p>@req.Message</p>
-                    }
-                    <p><span class="label label-default">@req.Status</span></p>
-                    @if (req.Status == "Pending")
-                    {
-                        using (Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post))
+            <!-- Check if the current user already has a request on this project -->
+            var existingRequest = (Model.CollaborationRequests != null && Model.CollaborationRequests.Any())
+                ? Model.CollaborationRequests.FirstOrDefault(r => r.Requester != null && r.Requester.UserId == userId)
+                : null;
+
+            <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 14px 0;">
+                    <i class="fa-solid fa-handshake" style="margin-right: 6px;"></i>Collaborate
+                </p>
+
+                @if (existingRequest == null)
+                {
+                    <!-- No existing request - show the send request form -->
+                    var collabForm = Html.BeginForm("Create", "CollaborationRequests", FormMethod.Post);
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                    <textarea name="message" class="form-control" rows="2" placeholder="Tell the developer why you'd like to collaborate..." style="margin-bottom: 8px;"></textarea>
+                    <button type="submit" class="btn btn-success btn-sm" style="margin-top: 10px">Send Request</button>
+                    collabForm.Dispose();
+                }
+                else
+                {
+                    <!-- Request already sent - show current status and optional withdraw button -->
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <p class="text-muted" style="font-size: 0.85rem; margin: 0;">
+                            You sent a collaboration request &mdash; status:
+                            <span class="label @(existingRequest.Status == "Accepted" ? "label-success" : existingRequest.Status == "Declined" ? "label-danger" : "label-default")">@existingRequest.Status</span>
+                        </p>
+
+                        <!-- Withdraw option - only available while the request is still pending -->
+                        @if (existingRequest.Status == "Pending")
                         {
+                            var withdrawForm = Html.BeginForm("Withdraw", "CollaborationRequests", FormMethod.Post);
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="requestId" value="@req.RequestId" />
-                            <input type="hidden" name="status" value="Accepted" />
-                            <button type="submit" class="btn btn-success btn-xs">Accept</button>
+                            <input type="hidden" name="requestId" value="@existingRequest.RequestId" />
+                            <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                            <button type="submit" class="btn btn-danger btn-xs"
+                                    onclick="return confirm('Withdraw your collaboration request?');">
+                                Withdraw Request
+                            </button>
+                            withdrawForm.Dispose();
                         }
-                        using (Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post))
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Collaboration Requests management section - owner only -->
+        @if (isOwner && Model.CollaborationRequests != null && Model.CollaborationRequests.Any())
+        {
+            <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 14px 0;">
+                    <i class="fa-solid fa-users" style="margin-right: 6px;"></i>Collaboration Requests
+                </p>
+
+                <!-- Display all requests newest first -->
+                @foreach (var req in Model.CollaborationRequests.OrderByDescending(r => r.CreatedAt))
+                {
+                    <div style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                            <div>
+                                @if (req.Requester.IsDeleted)
+                                {
+                                    <!-- Requester has deleted their account - show placeholder -->
+                                    <span style="color: rgba(255,255,255,0.25); font-size: 0.88rem;">Deleted User</span>
+                                }
+                                else
+                                {
+                                    @Html.ActionLink(req.Requester.Username, "View", "Profile", new { id = req.Requester.DeveloperId }, new { style = "color: #22c55e; font-size: 0.88rem; font-weight: 700;" })
+                                }
+                                <small class="text-muted" style="margin-left: 8px;">@req.CreatedAt.ToString("dd MMM yyyy")</small>
+                            </div>
+                            <span class="label @(req.Status == "Accepted" ? "label-success" : req.Status == "Declined" ? "label-danger" : "label-default")">@req.Status</span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(req.Message))
                         {
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="requestId" value="@req.RequestId" />
-                            <input type="hidden" name="status" value="Declined" />
-                            <button type="submit" class="btn btn-danger btn-xs">Decline</button>
+                            <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin: 0 0 10px 0;">@req.Message</p>
                         }
+
+                        <!-- Accept/Decline buttons - only shown for pending requests from active users -->
+                        @if (req.Status == "Pending")
+                        {
+                            if (req.Requester.IsDeleted)
+                            {
+                                <!-- Cannot accept/decline a request from a deleted account -->
+                                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.25); margin: 0;">
+                                    This user has deleted their account
+                                </p>
+                            }
+                            else
+                            {
+                                <div style="display: flex; gap: 8px;">
+                                    @{ var acceptForm = Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post); }
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@req.RequestId" />
+                                    <input type="hidden" name="status" value="Accepted" />
+                                    <button type="submit" class="btn btn-success btn-xs">Accept</button>
+                                    @{ acceptForm.Dispose(); }
+
+                                    @{ var declineForm = Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post); }
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@req.RequestId" />
+                                    <input type="hidden" name="status" value="Declined" />
+                                    <button type="submit" class="btn btn-danger btn-xs">Decline</button>
+                                    @{ declineForm.Dispose(); }
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Accepted collaborators - visible to all visitors -->
+        @{
+            var acceptedCollabs = Model.CollaborationRequests != null
+                ? Model.CollaborationRequests.Where(r => r.Status == "Accepted" && r.Requester != null && !r.Requester.IsDeleted).ToList()
+                : new List<MzansiBuilds.Models.CollaborationRequest>();
+        }
+        @if (acceptedCollabs.Any())
+        {
+            <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 0 0 14px 0;">
+                    <i class="fa-solid fa-people-group" style="margin-right: 6px;"></i>Collaborators
+                </p>
+                <!-- Render each accepted collaborator as a link to their public profile -->
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    @foreach (var collab in acceptedCollabs)
+                    {
+                        @Html.ActionLink(collab.Requester.Username, "View", "Profile",
+                            new { id = collab.Requester.DeveloperId },
+                            new { style = "font-size: 0.82rem; font-weight: 600; background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); border-radius: 20px; padding: 3px 12px; text-decoration: none;" })
                     }
                 </div>
             </div>
         }
-    }
-}
 
-<hr />
+        <!-- Bottom action buttons - Edit only visible to project owner -->
+        <div style="padding: 16px 24px; display: flex; gap: 10px; flex-wrap: wrap;">
+            @Html.ActionLink("Back to Feed", "Index", null, new { @class = "btn btn-default btn-sm" })
+            @if (isOwner)
+            {
+                @Html.ActionLink("Edit Project", "Edit", new { id = Model.ProjectId }, new { @class = "btn btn-warning btn-sm" })
+            }
+        </div>
 
-@* Action buttons *@
-<div>
-    @Html.ActionLink("Back to Feed", "Index", null, new { @class = "btn btn-default" })
-    @if (Request.IsAuthenticated)
-    {
-        var userId = System.Web.HttpContext.Current.User.Identity.GetUserId();
-        if (Model.Developer.UserId == userId)
-        {
-            @Html.ActionLink("Edit Project", "Edit", new { id = Model.ProjectId }, new { @class = "btn btn-warning" })
-        }
-    }
+    </div>
 </div>

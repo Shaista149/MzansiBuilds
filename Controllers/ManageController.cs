@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
@@ -50,8 +49,7 @@ namespace MzansiBuilds.Controllers
             }
         }
 
-        //
-        // GET: /Manage/Index
+        // GET - /Manage/Index
         public async Task<ActionResult> Index(ManageMessageId? message)
         {
             ViewBag.StatusMessage =
@@ -75,8 +73,7 @@ namespace MzansiBuilds.Controllers
             return View(model);
         }
 
-        //
-        // POST: /Manage/RemoveLogin
+        // POST - /Manage/RemoveLogin
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> RemoveLogin(string loginProvider, string providerKey)
@@ -100,14 +97,13 @@ namespace MzansiBuilds.Controllers
         }
 
         //
-        // GET: /Manage/AddPhoneNumber
+        // GET - /Manage/AddPhoneNumber
         public ActionResult AddPhoneNumber()
         {
             return View();
         }
 
-        //
-        // POST: /Manage/AddPhoneNumber
+        // POST - /Manage/AddPhoneNumber
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> AddPhoneNumber(AddPhoneNumberViewModel model)
@@ -130,8 +126,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("VerifyPhoneNumber", new { PhoneNumber = model.Number });
         }
 
-        //
-        // POST: /Manage/EnableTwoFactorAuthentication
+        // POST - /Manage/EnableTwoFactorAuthentication
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EnableTwoFactorAuthentication()
@@ -145,8 +140,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("Index", "Manage");
         }
 
-        //
-        // POST: /Manage/DisableTwoFactorAuthentication
+        // POST - /Manage/DisableTwoFactorAuthentication
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DisableTwoFactorAuthentication()
@@ -160,8 +154,7 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("Index", "Manage");
         }
 
-        //
-        // GET: /Manage/VerifyPhoneNumber
+        // GET - /Manage/VerifyPhoneNumber
         public async Task<ActionResult> VerifyPhoneNumber(string phoneNumber)
         {
             var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User.Identity.GetUserId(), phoneNumber);
@@ -169,8 +162,7 @@ namespace MzansiBuilds.Controllers
             return phoneNumber == null ? View("Error") : View(new VerifyPhoneNumberViewModel { PhoneNumber = phoneNumber });
         }
 
-        //
-        // POST: /Manage/VerifyPhoneNumber
+        // POST - /Manage/VerifyPhoneNumber
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> VerifyPhoneNumber(VerifyPhoneNumberViewModel model)
@@ -194,8 +186,7 @@ namespace MzansiBuilds.Controllers
             return View(model);
         }
 
-        //
-        // POST: /Manage/RemovePhoneNumber
+        // POST - /Manage/RemovePhoneNumber
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> RemovePhoneNumber()
@@ -213,15 +204,13 @@ namespace MzansiBuilds.Controllers
             return RedirectToAction("Index", new { Message = ManageMessageId.RemovePhoneSuccess });
         }
 
-        //
-        // GET: /Manage/ChangePassword
+        // GET - /Manage/ChangePassword
         public ActionResult ChangePassword()
         {
             return View();
         }
 
-        //
-        // POST: /Manage/ChangePassword
+        // POST - /Manage/ChangePassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> ChangePassword(ChangePasswordViewModel model)
@@ -230,6 +219,14 @@ namespace MzansiBuilds.Controllers
             {
                 return View(model);
             }
+
+            // Prevent same password
+            if (model.OldPassword == model.NewPassword)
+            {
+                ModelState.AddModelError("", "Your new password must be different from your current password.");
+                return View(model);
+            }
+
             var result = await UserManager.ChangePasswordAsync(User.Identity.GetUserId(), model.OldPassword, model.NewPassword);
             if (result.Succeeded)
             {
@@ -238,21 +235,20 @@ namespace MzansiBuilds.Controllers
                 {
                     await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
                 }
-                return RedirectToAction("Index", new { Message = ManageMessageId.ChangePasswordSuccess });
+                TempData["Success"] = "Password changed successfully!";
+                return RedirectToAction("Index", "Profile");
             }
             AddErrors(result);
             return View(model);
         }
 
-        //
-        // GET: /Manage/SetPassword
+        // GET - /Manage/SetPassword
         public ActionResult SetPassword()
         {
             return View();
         }
 
-        //
-        // POST: /Manage/SetPassword
+        // POST - /Manage/SetPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> SetPassword(SetPasswordViewModel model)
@@ -276,8 +272,7 @@ namespace MzansiBuilds.Controllers
             return View(model);
         }
 
-        //
-        // GET: /Manage/ManageLogins
+        // GET - /Manage/ManageLogins
         public async Task<ActionResult> ManageLogins(ManageMessageId? message)
         {
             ViewBag.StatusMessage =
@@ -299,8 +294,7 @@ namespace MzansiBuilds.Controllers
             });
         }
 
-        //
-        // POST: /Manage/LinkLogin
+        // POST - /Manage/LinkLogin
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult LinkLogin(string provider)
@@ -309,8 +303,7 @@ namespace MzansiBuilds.Controllers
             return new AccountController.ChallengeResult(provider, Url.Action("LinkLoginCallback", "Manage"), User.Identity.GetUserId());
         }
 
-        //
-        // GET: /Manage/LinkLoginCallback
+        // GET : /Manage/LinkLoginCallback
         public async Task<ActionResult> LinkLoginCallback()
         {
             var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync(XsrfKey, User.Identity.GetUserId());
@@ -320,6 +313,46 @@ namespace MzansiBuilds.Controllers
             }
             var result = await UserManager.AddLoginAsync(User.Identity.GetUserId(), loginInfo.Login);
             return result.Succeeded ? RedirectToAction("ManageLogins") : RedirectToAction("ManageLogins", new { Message = ManageMessageId.Error });
+        }
+
+        // GET : Manage/DeleteAccount
+        public ActionResult DeleteAccount()
+        {
+            return View();
+        }
+
+        // POST : Manage/DeleteAccount
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ActionName("DeleteAccount")]
+        public async Task<ActionResult> DeleteAccountConfirmed()
+        {
+            var userId = User.Identity.GetUserId();
+            var db = new ApplicationDbContext();
+
+            var developer = db.Developers.FirstOrDefault(d => d.UserId == userId);
+
+            if (developer != null)
+            {
+                // Remove collaboration requests made BY this developer
+                // (these are admin records on other people's projects, no community value)
+                var theirRequests = db.CollaborationRequests
+                    .Where(r => r.RequesterId == developer.DeveloperId).ToList();
+                db.CollaborationRequests.RemoveRange(theirRequests);
+
+                // Anonymise the profile - keep projects, comments, milestones
+                developer.IsDeleted = true;
+                developer.Username = "Deleted User";
+                developer.UserId = null;
+                db.SaveChanges();
+            }
+
+            AuthenticationManager.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+                await UserManager.DeleteAsync(user);
+
+            return RedirectToAction("Index", "Home");
         }
 
         protected override void Dispose(bool disposing)

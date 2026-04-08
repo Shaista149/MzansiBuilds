@@ -1,0 +1,128 @@
+﻿@model IEnumerable<MzansiBuilds.Models.CollaborationRequest>
+
+@{
+    ViewBag.Title = "Collaboration Requests";
+
+    // Split requests into pending (actionable) and resolved (history) for separate display
+    var pending = Model.Where(r => r.Status == "Pending").ToList();
+    var others = Model.Where(r => r.Status != "Pending").OrderByDescending(r => r.CreatedAt).ToList();
+}
+
+<!-- Page heading -->
+<div class="page-hero" style="margin-bottom: 10px;">
+    <h2>Collaboration <span class="green-text">Requests</span></h2>
+    <p style="margin-top: 10px;">Requests from developers who want to join your projects</p>
+</div>
+
+@if (!Model.Any())
+{
+    <!-- Empty state - no requests of any kind -->
+    <div style="text-align: center; padding: 80px 20px;">
+        <p style="color: rgba(255,255,255,0.35); font-size: 1rem;">No collaboration requests yet.</p>
+        @Html.ActionLink("Back to Feed", "Index", "Projects", null, new { @class = "btn btn-default", style = "margin-top: 16px;" })
+    </div>
+}
+else
+{
+    <!-- Pending requests - require owner action (Accept / Decline) -->
+    if (pending.Any())
+    {
+        <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin-bottom: 12px;">
+            <i class="fa-solid fa-clock" style="margin-right: 6px;"></i>Pending (@pending.Count)
+        </p>
+
+        foreach (var req in pending)
+        {
+            <div class="panel panel-default" style="margin-bottom: 12px;">
+                <div class="panel-body" style="padding: 16px 20px;">
+
+                    <!-- Request header: project title, requester name, date, status badge -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <a href="@Url.Action("Details", "Projects", new { id = req.ProjectId })" style="color: #22c55e; font-weight: 700; font-size: 0.95rem;">@req.Project.Title</a>
+                            <span style="color: rgba(255,255,255,0.3); margin: 0 6px;">·</span>
+                            @if (req.Requester.IsDeleted)
+                            {
+                                <!-- Requester account has been soft-deleted -->
+                                <span style="color: rgba(255,255,255,0.25); font-size: 0.85rem;">Deleted User</span>
+                            }
+                            else
+                            {
+                                @Html.ActionLink(req.Requester.Username, "View", "Profile", new { id = req.Requester.DeveloperId }, new { style = "color: rgba(255,255,255,0.6); font-size: 0.85rem;" })
+                            }
+                            <span style="color: rgba(255,255,255,0.2); font-size: 0.78rem; margin-left: 8px;">@req.CreatedAt.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <span class="label label-default">Pending</span>
+                    </div>
+
+                    <!-- Optional message from the requester -->
+                    @if (!string.IsNullOrEmpty(req.Message))
+                    {
+                        <p style="font-size: 0.85rem; color: rgba(255,255,255,0.55); margin: 0 0 14px 0; padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 6px; border-left: 2px solid rgba(255,255,255,0.08);">
+                            @req.Message
+                        </p>
+                    }
+
+                    @if (req.Requester.IsDeleted)
+                    {
+                        <!-- Cannot respond to a deleted user - show info text instead of action buttons -->
+                        <p style="font-size: 0.78rem; color: rgba(255,255,255,0.25); margin: 0;">This user has deleted their account.</p>
+                    }
+                    else
+                    {
+                        <!-- Accept / Decline forms - each is a separate POST to CollaborationRequestsController.Respond -->
+                        <div style="display: flex; gap: 8px;">
+                            @{ var acceptForm = Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post); }
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.RequestId" />
+                            <input type="hidden" name="status" value="Accepted" />
+                            <button type="submit" class="btn btn-success btn-xs" style="padding: 6px 14px;">Accept</button>
+                            @{ acceptForm.Dispose(); }
+
+                            @{ var declineForm = Html.BeginForm("Respond", "CollaborationRequests", FormMethod.Post); }
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.RequestId" />
+                            <input type="hidden" name="status" value="Declined" />
+                            <button type="submit" class="btn btn-danger btn-xs" style="padding: 6px 14px;">Decline</button>
+                            @{ declineForm.Dispose(); }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Previously resolved requests (Accepted / Declined) - read-only history -->
+    if (others.Any())
+    {
+        <p style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.3); margin: 28px 0 12px 0;">
+            <i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i>Previous Requests
+        </p>
+
+        foreach (var req in others)
+        {
+            <div style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <a href="@Url.Action("Details", "Projects", new { id = req.ProjectId })" style="color: rgba(255,255,255,0.7); font-size: 0.88rem; font-weight: 600;">@req.Project.Title</a>
+                    <span style="color: rgba(255,255,255,0.2); margin: 0 6px;">·</span>
+                    @if (req.Requester.IsDeleted)
+                    {
+                        <span style="color: rgba(255,255,255,0.25); font-size: 0.82rem;">Deleted User</span>
+                    }
+                    else
+                    {
+                        @Html.ActionLink(req.Requester.Username, "View", "Profile", new { id = req.Requester.DeveloperId }, new { style = "color: rgba(255,255,255,0.4); font-size: 0.82rem;" })
+                    }
+                    <span style="color: rgba(255,255,255,0.2); font-size: 0.78rem; margin-left: 8px;">@req.CreatedAt.ToString("dd MMM yyyy")</span>
+                </div>
+                <!-- Status badge: green for Accepted, red for Declined -->
+                <span class="label @(req.Status == "Accepted" ? "label-success" : "label-danger")">@req.Status</span>
+            </div>
+        }
+    }
+
+    <!-- Back to feed link -->
+    <div style="margin-top: 28px;">
+        @Html.ActionLink("← Back to Feed", "Index", "Projects", null, new { style = "font-size: 0.82rem; color: rgba(255,255,255,0.35);" })
+    </div>
+}

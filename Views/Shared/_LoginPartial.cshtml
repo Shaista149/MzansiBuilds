@@ -1,22 +1,66 @@
 ﻿@using Microsoft.AspNet.Identity
+
+@{
+    // Fetch the current user's Developer record to get their username and pending request count
+    var loginUserId = User.Identity.GetUserId();
+    var db = new MzansiBuilds.Models.ApplicationDbContext();
+    var loginDev = db.Developers.FirstOrDefault(d => d.UserId == loginUserId);
+
+    // Fall back to the part of the email before '@' if no username is set
+    var rawName = loginDev != null ? loginDev.Username : User.Identity.GetUserName();
+    var displayName = rawName.Contains("@") ? rawName.Split('@')[0] : rawName;
+
+    // Count pending collaboration requests across all of the logged-in user's projects
+    // Used to populate the notification bell badge
+    int pendingCount = 0;
+    if (loginDev != null)
+    {
+        pendingCount = db.CollaborationRequests
+            .Count(r => r.Project.DeveloperId == loginDev.DeveloperId && r.Status == "Pending");
+    }
+}
+
 @if (Request.IsAuthenticated)
 {
+    <!-- Authenticated user: show notification bell, greeting link, and log off -->
     using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "navbar-right" }))
     {
-    @Html.AntiForgeryToken()
+        @Html.AntiForgeryToken()
 
-    <ul class="navbar-nav navbar-right">
-        <li>
-            @Html.ActionLink("Hello " + User.Identity.GetUserName() + "!", "Index", "Manage", routeValues: null, htmlAttributes: new { title = "Manage", @class="nav-link" })
-        </li>
-        <li><a class="nav-link" href="javascript:document.getElementById('logoutForm').submit()">Log off</a></li>
-    </ul>
+        <ul class="nav navbar-nav navbar-right" style="display: flex; align-items: center;">
+
+            <!-- Notification bell - links to Collaboration Requests index -->
+            <li style="display: flex; align-items: center;">
+                <a href="@Url.Action("Index", "CollaborationRequests")" class="nav-link" title="Collaboration requests" style="position: relative; padding: 8px 10px;">
+                    <i class="fa-solid fa-bell"></i>
+                    <!-- Badge showing pending count - only rendered when there are pending requests -->
+                    @if (pendingCount > 0)
+                    {
+                        <span style="position: absolute; top: 4px; right: 4px; background: #22c55e; color: #0a0a0a; font-size: 0.6rem; font-weight: 800; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; line-height: 1;">
+                            @pendingCount
+                        </span>
+                    }
+                </a>
+            </li>
+
+            <!-- Greeting link - navigates to the user's profile page -->
+            <li>
+                @Html.ActionLink("Hello " + displayName + "!", "Index", "Profile", routeValues: null, htmlAttributes: new { title = "Manage", @class = "nav-link" })
+            </li>
+
+            <!-- Log off - submits the logout form via JavaScript to use POST (CSRF-safe) -->
+            <li>
+                <a href="javascript:document.getElementById('logoutForm').submit()" class="nav-link">Log off</a>
+            </li>
+
+        </ul>
     }
 }
 else
 {
-    <ul class="navbar-nav navbar-right">
-        <li>@Html.ActionLink("Register", "Register", "Account", routeValues: null, htmlAttributes: new { id = "registerLink", @class="nav-link" })</li>
-        <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink", @class="nav-link" })</li>
+    <!-- Unauthenticated: show Register and Login links -->
+    <ul class="nav navbar-nav navbar-right">
+        <li>@Html.ActionLink("Register", "Register", "Account", routeValues: null, htmlAttributes: new { @class = "nav-link" })</li>
+        <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { @class = "nav-link" })</li>
     </ul>
 }

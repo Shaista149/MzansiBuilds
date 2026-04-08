@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNet.Identity;
 using MzansiBuilds.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Web;
 using System.Web.Mvc;
 
 namespace MzansiBuilds.Controllers
@@ -16,7 +14,7 @@ namespace MzansiBuilds.Controllers
     {
         private ApplicationDbContext db = new ApplicationDbContext();
 
-        // POST only - milestones are added from the project Details page
+        // POST : add a milestone to a project, only the project owner can do this
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -29,7 +27,6 @@ namespace MzansiBuilds.Controllers
                     return new HttpStatusCodeResult(HttpStatusCode.Unauthorized);
 
                 var project = db.Projects.Find(projectId);
-
                 if (project != null && project.DeveloperId == developer.DeveloperId)
                 {
                     var milestone = new Milestone
@@ -54,11 +51,11 @@ namespace MzansiBuilds.Controllers
             var userId = User.Identity.GetUserId();
             return db.Developers.FirstOrDefault(d => d.UserId == userId);
         }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
                 db.Dispose();
-
             base.Dispose(disposing);
         }
     }

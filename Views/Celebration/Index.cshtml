@@ -1,36 +1,83 @@
 ﻿@model IEnumerable<MzansiBuilds.Models.Celebration>
+@using Microsoft.AspNet.Identity
 
 @{
     ViewBag.Title = "Celebration Wall";
+    // Resolve current user ID
+    var currentUserId = Request.IsAuthenticated
+        ? System.Web.HttpContext.Current.User.Identity.GetUserId()
+        : null;
 }
 
-<h2>Celebration Wall</h2>
-<p>Projects that have been completed by our community of developers</p>
-
-<hr />
+<!-- Page heading -->
+<div class="page-hero">
+    <h2>Celebration <span class="green-text">Wall</span></h2>
+    <p style="margin-top: 10px;">Projects shipped by our community of developers</p>
+</div>
 
 @if (Model.Any())
 {
+    <!-- Completed project count -->
+    <p style="font-size: 0.82rem; color: rgba(255,255,255,0.3); margin-bottom: 24px;">
+        <i class="fa-solid fa-trophy" style="color: #22c55e; margin-right: 6px;"></i>
+        @Model.Count() completed project@(Model.Count() == 1 ? "" : "s") and counting
+    </p>
+
     foreach (var celebration in Model)
     {
+        <!-- Determine if the logged-in user owns this project - controls YOUR PROJECT badge visibility -->
+        var isOwner = currentUserId != null && celebration.Developer.UserId == currentUserId;
+
         <div class="panel panel-success">
-            <div class="panel-heading">
-                <h3 class="panel-title"> @celebration.Project.Title</h3>
+            <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <i class="fa-solid fa-trophy" style="color: #22c55e; font-size: 0.95rem;"></i>
+                    <h3 class="panel-title">@celebration.Project.Title</h3>
+                    <!-- YOUR PROJECT badge - only shown to the project owner -->
+                    @if (isOwner)
+                    {
+                        <span style="font-size: 0.7rem; font-weight: 700; background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); border-radius: 20px; padding: 2px 10px; letter-spacing: 0.4px;">
+                            <i class="fa-solid fa-crown" style="margin-right: 4px; font-size: 0.65rem;"></i>YOUR PROJECT
+                        </span>
+                    }
+                </div>
             </div>
+
             <div class="panel-body">
-                <p>@celebration.Project.Description</p>
-                <p>
-                    <strong>Built by:</strong> @celebration.Developer.Username &nbsp;|&nbsp;
-                    <strong>Completed:</strong> @celebration.CelebratedAt.ToString("dd MMM yyyy")
-                </p>
-                @Html.ActionLink("View Project", "Details", "Projects",
-                    new { id = celebration.ProjectId },
-                    new { @class = "btn btn-success btn-sm" })
+
+                <!-- Project description -->
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 14px; font-size: 0.9rem;">@celebration.Project.Description</p>
+
+                <!-- Metadata: developer name (links to public profile) and completion date -->
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.78rem; color: rgba(255,255,255,0.38); margin-bottom: 16px;">
+                    <span>
+                        <i class="fa-solid fa-user" style="color: #22c55e; margin-right: 5px;"></i>
+                        @if (celebration.Developer.IsDeleted)
+                        {
+                            <!-- Developer has soft-deleted their account - show placeholder -->
+                            <span style="color: rgba(255,255,255,0.25);">Deleted User</span>
+                        }
+                        else
+                        {
+                            @Html.ActionLink(celebration.Developer.Username, "View", "Profile",
+                                new { id = celebration.Developer.DeveloperId },
+                                new { style = "color: rgba(255,255,255,0.38); font-size: 0.78rem;" })
+                        }
+                    </span>
+                    <span><i class="fa-regular fa-calendar" style="margin-right: 5px;"></i>@celebration.CelebratedAt.ToString("dd MMM yyyy")</span>
+                </div>
+
+                @Html.ActionLink("View Project", "Details", "Projects", new { id = celebration.ProjectId }, new { @class = "btn btn-success btn-sm" })
+
             </div>
         </div>
     }
 }
 else
 {
-    <p class="text-muted">No completed projects yet - be the first to ship something!</p>
+    <!-- Empty state - no completed projects yet -->
+    <div style="text-align: center; padding: 80px 20px;">
+        <p style="color: rgba(255,255,255,0.4); font-size: 1rem;">No completed projects yet - be the first to ship something!</p>
+        @Html.ActionLink("View Projects", "Index", "Projects", null, new { @class = "btn btn-primary", style = "margin-top: 16px;" })
+    </div>
 }

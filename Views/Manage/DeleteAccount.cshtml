@@ -1,0 +1,49 @@
+﻿@{
+    ViewBag.Title = "Delete Account";
+}
+
+<!-- Constrained width for a focused confirmation -->
+<div style="max-width: 500px; margin: 0 auto;">
+
+    <!-- Page heading -->
+    <div class="page-hero" style="margin-bottom: 20px;">
+        <h2 style="color: #ef4444;">Delete <span style="color: #f87171;">Account</span></h2>
+        <p>This action is permanent and cannot be undone</p>
+    </div>
+
+    <!-- Danger-bordered panel to reinforce severity -->
+    <div class="panel" style="border: 1px solid rgba(239,68,68,0.25); border-left: 3px solid #ef4444; background: var(--black-card);">
+        <div class="panel-body" style="padding: 28px;">
+
+            <!-- What will be deleted - clearly listed so the user knows what they're losing -->
+            <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 14px 16px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px 0; font-size: 0.88rem; color: #f87171; font-weight: 600;">
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>The following will be permanently deleted:
+                </p>
+                <ul style="margin: 0; padding-left: 18px; color: rgba(255,255,255,0.55); font-size: 0.83rem; line-height: 1.8;">
+                    <li>Your login credentials and account access</li>
+                    <li>Your collaboration requests on other projects</li>
+                    <li>Your profile bio and personal details</li>
+                </ul>
+            </div>
+
+            <!-- What is kept - projects/comments/milestones are soft-deleted so community history is preserved -->
+            <div style="background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.12); border-radius: 8px; padding: 12px 14px; margin-top: 12px; margin-bottom: 24px; font-size: 0.82rem; color: rgba(255,255,255,0.55);">
+                <strong style="color: #22c55e;">Kept for the community:</strong> Your projects, comments and milestones
+                will remain visible as "Deleted User". To remove these permanently, delete them yourself before deleting your account.
+            </div>
+
+            <!-- Confirmation form - posts to ManageController.DeleteAccount (POST) -->
+            @using (Html.BeginForm("DeleteAccount", "Manage", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <input type="submit" value="Yes, Delete My Account" class="btn btn-danger" />
+                    <!-- Cancel returns to the profile page without any changes -->
+                    @Html.ActionLink("Cancel", "Index", "Profile", null, new { @class = "btn btn-default" })
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

@@ -1,60 +1,69 @@
 ﻿@model MzansiBuilds.Models.Project
 
 @{
-    ViewBag.Title = "Create Project";
+    ViewBag.Title = "Share a Project";
 }
 
-<h2>Share Your Project</h2>
+<!-- Constrained width for a focused form layout -->
+<div style="max-width: 620px; margin: 0 auto;">
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
+    <!-- Page heading -->
+    <div class="page-hero" style="padding: 16px 0 2px 0; margin-bottom: 16px;">
+        <h2>Share <span class="green-text">Your Project</span></h2>
+        <p>Build in public - show the community what you're working on</p>
+    </div>
 
-    <div class="form-horizontal">
+    <!-- Create project form - posts to ProjectsController.Create -->
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
 
+        <!-- Summary of validation errors (field-level errors shown inline below each input) -->
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.Title, new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.Title, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-danger" })
+        <div class="panel panel-default">
+            <div class="panel-body" style="display: flex; flex-direction: column; gap: 16px;">
+
+                <!-- Title - required field -->
+                <div>
+                    <label class="control-label">Project Title</label>
+                    @Html.EditorFor(model => model.Title, new { htmlAttributes = new { @class = "form-control", placeholder = "e.g. MzansiBuilds - Developer Progress Platform" } })
+                    @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-danger" })
+                </div>
+
+                <!-- Description - required -->
+                <div>
+                    <label class="control-label">Description</label>
+                    @Html.TextAreaFor(model => model.Description, new { @class = "form-control", rows = "3", placeholder = "What are you building and why?" })
+                    @Html.ValidationMessageFor(model => model.Description, "", new { @class = "text-danger" })
+                </div>
+
+                <!-- Stage dropdown - required; drives the stage badge shown on cards -->
+                <div>
+                    <label class="control-label">Stage</label>
+                    @Html.DropDownListFor(model => model.Stage,
+                        new SelectList(new[] { "Idea", "In Progress", "MVP", "Completed" }),
+                        "-- Select Stage --",
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(model => model.Stage, "", new { @class = "text-danger" })
+                </div>
+
+                <!-- Support Needed - optional; shown as a highlighted callout on project cards -->
+                <div>
+                    <label class="control-label">
+                        Support Needed
+                        <span style="color: rgba(255,255,255,0.3); font-weight: 400; text-transform: none; letter-spacing: 0;">(optional)</span>
+                    </label>
+                    @Html.TextAreaFor(model => model.SupportNeeded, new { @class = "form-control", rows = "2", placeholder = "What kind of help are you looking for? e.g. frontend dev, UI/UX, testing..." })
+                </div>
+
+                <!-- Form action buttons -->
+                <div style="display: flex; gap: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <input type="submit" value="Share Project" class="btn btn-primary" />
+                    @Html.ActionLink("Cancel", "Index", null, new { @class = "btn btn-default" })
+                </div>
+
             </div>
         </div>
-
-        <div class="form-group">
-            @Html.LabelFor(model => model.Description, new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.TextAreaFor(model => model.Description, new { @class = "form-control", rows = "4" })
-                @Html.ValidationMessageFor(model => model.Description, "", new { @class = "text-danger" })
-            </div>
-        </div>
-
-        <div class="form-group">
-            @Html.LabelFor(model => model.Stage, new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.DropDownListFor(model => model.Stage, new SelectList(new[]
-                {
-                    "Idea", "In Progress", "MVP", "Completed"
-                }), "-- Select Stage --", new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.Stage, "", new { @class = "text-danger" })
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="control-label col-md-2">Support Needed</label>
-            <div class="col-md-10">
-                @Html.TextAreaFor(model => model.SupportNeeded, new { @class = "form-control", rows = "3" })
-                @Html.ValidationMessageFor(model => model.SupportNeeded, "", new { @class = "text-danger" })
-            </div>
-        </div>
-
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Share Project" class="btn btn-primary" />
-                @Html.ActionLink("Cancel", "Index", null, new { @class = "btn btn-default" })
-            </div>
-        </div>
-
-    </div>
-}
+    }
+</div>

@@ -1,33 +1,80 @@
 ﻿@{
-    ViewBag.Title = "Home Page";
+    ViewBag.Title = "Home";
 }
 
-<main>
-    <section class="row" aria-labelledby="aspnetTitle">
-        <h1 id="title">ASP.NET</h1>
-        <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-        <p><a href="https://asp.net" class="btn btn-primary btn-md">Learn more &raquo;</a></p>
-    </section>
+<!-- Full-height flex layout centres content vertically on the landing page -->
+<div style="display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 90px); padding: 0;">
 
-    <div class="row">
-        <section class="col-md-4" aria-labelledby="gettingStartedTitle">
-            <h2 id="gettingStartedTitle">Getting started</h2>
-            <p>
-                ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-                enables a clean separation of concerns and gives you full control over markup
-                for enjoyable, agile development.
-            </p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="librariesTitle">
-            <h2 id="librariesTitle">Get more libraries</h2>
-            <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="hostingTitle">
-            <h2 id="hostingTitle">Web Hosting</h2>
-            <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-        </section>
+    <!-- Hero section -->
+    <div style="text-align: center; margin-bottom: 40px;">
+
+        <!-- Community pill badge -->
+        <div style="display: inline-block; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 20px; padding: 5px 16px; font-size: 0.72rem; font-weight: 700; color: #22c55e; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 22px;">
+            Build in Public &middot; South Africa
+        </div>
+
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; line-height: 1.15; color: #fff;">
+            Where developers<br><span style="color: #22c55e;">build in public</span>
+        </h1>
+
+        <p style="font-size: 0.95rem; color: rgba(255,255,255,0.48); max-width: 480px; margin: 0 auto 28px auto; line-height: 1.75;">
+            Share your projects, log milestones, get feedback and collaborate with other developers in the Mzansi community.
+        </p>
+
+        <!-- CTA buttons - Join only shown to unauthenticated visitors -->
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            @Html.ActionLink("Explore Projects", "Index", "Projects", null, new { @class = "btn btn-primary", style = "padding: 11px 28px; font-size: 0.92rem;" })
+            @if (!Request.IsAuthenticated)
+            {
+                @Html.ActionLink("Join the Community", "Register", "Account", null, new { @class = "btn btn-default", style = "padding: 11px 28px; font-size: 0.92rem;" })
+            }
+        </div>
+
     </div>
-</main>
+
+    <!-- Feature cards - four-column grid summarising the platform's core features -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 24px 22px;">
+                <div style="width: 40px; height: 40px; background: rgba(34,197,94,0.1); border-radius: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-rocket" style="color: #22c55e; font-size: 1rem;"></i>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px; font-size: 0.92rem;">Build in Public</h4>
+                <p style="font-size: 0.82rem; margin: 0; line-height: 1.65; color: rgba(255,255,255,0.48);">Share what you are building with the community. Progress over perfection.</p>
+            </div>
+        </div>
+
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 24px 22px;">
+                <div style="width: 40px; height: 40px; background: rgba(34,197,94,0.1); border-radius: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-flag-checkered" style="color: #22c55e; font-size: 1rem;"></i>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px; font-size: 0.92rem;">Log Milestones</h4>
+                <p style="font-size: 0.82rem; margin: 0; line-height: 1.65; color: rgba(255,255,255,0.48);">Keep a journal of your progress so others can follow your journey.</p>
+            </div>
+        </div>
+
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 24px 22px;">
+                <div style="width: 40px; height: 40px; background: rgba(34,197,94,0.1); border-radius: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-handshake" style="color: #22c55e; font-size: 1rem;"></i>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px; font-size: 0.92rem;">Collaborate</h4>
+                <p style="font-size: 0.82rem; margin: 0; line-height: 1.65; color: rgba(255,255,255,0.48);">Send collaboration requests and build together with other developers.</p>
+            </div>
+        </div>
+
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 24px 22px;">
+                <div style="width: 40px; height: 40px; background: rgba(34,197,94,0.1); border-radius: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-trophy" style="color: #22c55e; font-size: 1rem;"></i>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px; font-size: 0.92rem;">Celebrate Wins</h4>
+                <p style="font-size: 0.82rem; margin: 0; line-height: 1.65; color: rgba(255,255,255,0.48);">Completed projects get featured on the Celebration Wall.</p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
