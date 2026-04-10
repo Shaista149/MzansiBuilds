@@ -36,6 +36,14 @@ Six tables: Developers, Projects, Comments, Milestones, CollaborationRequests, C
 3. Run `Update-Database` in the Package Manager Console
 4. Press F5 to run
 
+> If using LocalDB instead of Express, replace the connection string in `Web.config` with:
+> `Data Source=(LocalDB)\MSSQLLocalDB;Initial Catalog=MzansiBuilds;Integrated Security=True`
+> Then run `Update-Database` and F5 as normal.
+
+> If you get a Roslyn compiler error on first run, run
+> `Update-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -reinstall`
+> in the Package Manager Console, then rebuild and run again.
+
 ---
 
 ## Seed Data
