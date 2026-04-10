@@ -21,7 +21,7 @@ Built for the Derivco Graduate Programme Code Skills Challenge, April 2026.
 
 ## Database Design
 
-![ERD and User Flow](docs/MzansiBuild_UML.png)
+![ERD and User Flow](docs/uml.png)
 
 Six tables: Developers, Projects, Comments, Milestones, CollaborationRequests, Celebrations.
 
